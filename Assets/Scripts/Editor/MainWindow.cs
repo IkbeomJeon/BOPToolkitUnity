@@ -6,7 +6,7 @@ using UnityEngine;
 
 public class MainWindow : EditorWindow
 {
-    string scene_path;
+    string dataset_path;
 
     Vector2 scrollPos = Vector2.zero;
     public bool isLoaded = false;
@@ -18,21 +18,21 @@ public class MainWindow : EditorWindow
         scrollPos = EditorGUILayout.BeginScrollView(scrollPos, false, false);
 
         EditorGUILayout.BeginVertical(GUI.skin.box);
-        if (GUILayout.Button("Select scene path"))
+        if (GUILayout.Button("Select dataset path"))
         {
-            var path = EditorUtility.OpenFolderPanel("Select scene path", scene_path, "");
+            var path = EditorUtility.OpenFolderPanel("Select dataset path", dataset_path, "");
 
             if (!string.IsNullOrEmpty(path))
             {
-                scene_path = path;
+                dataset_path = path;
                 SavePreperence();
             }
 
         }
-        EditorGUILayout.LabelField(scene_path, EditorStyles.boldLabel);
+        EditorGUILayout.LabelField(dataset_path, EditorStyles.boldLabel);
         EditorGUILayout.EndVertical();
 
-        if (!string.IsNullOrEmpty(scene_path))
+        if (!string.IsNullOrEmpty(dataset_path))
         {
             EditorGUILayout.BeginHorizontal();
             var playButtonContent = EditorGUIUtility.IconContent("PlayButton On");
@@ -81,7 +81,10 @@ public class MainWindow : EditorWindow
 
     void LoadAll()
     {
+     
+        // Check all the number of samples.
         
+        //
     }
     void DestroyAll()
     {
@@ -92,14 +95,14 @@ public class MainWindow : EditorWindow
     {
         if (PlayerPrefs.HasKey("scene_path"))
         {
-            scene_path = PlayerPrefs.GetString("scene_path");
-            Debug.Log(scene_path);
+            dataset_path = PlayerPrefs.GetString("dataset_path");
+            Debug.Log(dataset_path);
         }
     }
 
     public void SavePreperence()
     {
-        PlayerPrefs.SetString("scene_path", scene_path);
+        PlayerPrefs.SetString("dataset_path", dataset_path);
     }
 
 
