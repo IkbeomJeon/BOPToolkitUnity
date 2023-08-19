@@ -24,7 +24,7 @@ public class MainWindow : EditorWindow
         //dataset_name = EditorGUILayout.TextField("Dataset name", dataset_name);
         //dataset_split = EditorGUILayout.TextField("Dataset split", dataset_split);
 
-        if (GUILayout.Button("Select scene path"))
+        if (datasetParams == null && GUILayout.Button("Select scene path"))
         {
             var path = EditorUtility.OpenFolderPanel("Select scene path", scene_path, "");
 
