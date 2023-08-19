@@ -15,6 +15,7 @@ public class MainWindow : EditorWindow
     public bool isPlaying = false;
     [SerializeField] BOPDatasetParams datasetParams;
 
+    int curr_frame_id;
 
     private void OnGUI()
     {
@@ -38,6 +39,8 @@ public class MainWindow : EditorWindow
             {
                 datasetParams = new BOPDatasetParams(scene_path);
                 EditorGUILayout.LabelField("Scene path: " + scene_path, EditorStyles.boldLabel);
+
+                curr_frame_id = 0;
             }
             catch (Exception e)
             {
@@ -49,8 +52,6 @@ public class MainWindow : EditorWindow
 
         if (datasetParams != null)
         {
-            EditorGUILayout.LabelField("Total frames", datasetParams.scene_camera.Count.ToString());
-
             EditorGUILayout.BeginHorizontal();
             var playButtonContent = EditorGUIUtility.IconContent("PlayButton On");
             var stopButtonContent = EditorGUIUtility.IconContent("d_PreMatQuad");
@@ -74,13 +75,22 @@ public class MainWindow : EditorWindow
                 isPlaying = false;
             }
             EditorGUILayout.EndHorizontal();
+            FrameSelectionMenu();
 
         }
-
+        
 
         EditorGUILayout.EndScrollView();
     }
+    void FrameSelectionMenu()
+    {
+        if (datasetParams == null)
+            return;
 
+        int total_frame = datasetParams.scene_camera.Count;
+        EditorGUILayout.LabelField("Total frames", datasetParams.scene_camera.Count.ToString());
+        var new_frame_id = EditorGUILayout.IntSlider(curr_frame_id, 0, total_frame);
+    }
     void LoadAll()
     {
 
