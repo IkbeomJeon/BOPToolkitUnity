@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices.ComTypes;
 using NUnit.Framework;
+using PointCloudExporter;
 using Unity.Plastic.Newtonsoft.Json;
 using UnityEditor.Graphs;
 using UnityEngine;
@@ -102,6 +103,18 @@ public class BOPLoaderTest
         Assert.AreEqual(object_gt_info.bbox_visib.Count, 4);
         Assert.AreEqual(object_gt_info.px_count_all, 1598);
 
+    }
+    [Test]
+    public void load_ply()
+    {
+        string name = "lm";
+        string split = "test";
+        string scene_id = "000001";
+        BOPDatasetParams dataset_params = new BOPDatasetParams(dataset_path, name, split);
+        var base_path = dataset_params.get_base_path();
+        var model_path = BOPPath.get_model_path(base_path, 1);
+        var go = PointCloudGenerator.LoadPly(model_path);
+        
     }
 }
 

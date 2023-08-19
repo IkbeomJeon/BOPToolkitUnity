@@ -60,10 +60,12 @@ public class BOPFrame
         List<GameObject> models = new List<GameObject>();
         foreach (var model in model_info)
         {
-            var go_model = new GameObject(model.Key.ToString());
+            //var go_model = new GameObject(model.Key.ToString());
             string model_path = BOPPath.get_model_path(base_path, model.Key);
             //var mesh_info = PointCloudGenerator.LoadPointCloud(model_path);
             //var go_model = PointCloudGenerator.ToGameObject(mesh_info, model.Key.ToString(), 0.1f);
+            var go_model = PointCloudGenerator.LoadPly(model_path);
+            go_model.name = model.Key.ToString();
             go_model.transform.parent = frame_root.transform;
             models.Add(go_model);
         }

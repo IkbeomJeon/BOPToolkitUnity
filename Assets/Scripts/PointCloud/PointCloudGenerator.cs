@@ -2,7 +2,7 @@
 using System;
 using System.Linq;
 using UnityEngine;
-
+using System.Collections.Generic;
 
 namespace PointCloudExporter
 {
@@ -52,7 +52,71 @@ namespace PointCloudExporter
 				Displace(Time.deltaTime);
 			}
 		}*/
+        static public GameObject LoadPly(string filePath)
+        {
+            // Load the .ply file
+            string[] lines = File.ReadAllLines(filePath);
 
+            // Create a new mesh
+            Mesh mesh = new Mesh();
+
+            // Parse the .ply file
+            int vertexCount = 0;
+            int faceCount = 0;
+            bool header = true;
+            List<Vector3> vertices = new List<Vector3>();
+            List<int> triangles = new List<int>();
+            List<Color> colors = new List<Color>();
+
+            foreach (string line in lines)
+            {
+                if (header)
+                {
+                    if (line.StartsWith("element vertex"))
+                    {
+                        vertexCount = int.Parse(line.Split(' ')[2]);
+                    }
+                    else if (line.StartsWith("element face"))
+                    {
+                        faceCount = int.Parse(line.Split(' ')[2]);
+                    }
+                    else if (line.StartsWith("end_header"))
+                    {
+                        header = false;
+                    }
+                }
+                else
+                {
+                    string[] parts = line.Split(' ');
+                    if (vertexCount > 0)
+                    {
+                        vertices.Add(new Vector3(float.Parse(parts[0]), float.Parse(parts[1]), float.Parse(parts[2])) * 0.001f);
+                        colors.Add(new Color(float.Parse(parts[6])/255f, float.Parse(parts[7])/255f, float.Parse(parts[8])/255f, float.Parse(parts[9])/255f));
+                        vertexCount--;
+                    }
+                    else if (faceCount > 0)
+                    {
+                        triangles.Add(int.Parse(parts[1]));
+                        triangles.Add(int.Parse(parts[2]));
+                        triangles.Add(int.Parse(parts[3]));
+                        faceCount--;
+                    }
+                }
+            }
+
+            // Set the mesh data
+            mesh.vertices = vertices.ToArray();
+            mesh.triangles = triangles.ToArray();
+            mesh.colors = colors.ToArray();
+            mesh.RecalculateNormals();
+
+            // Create a new GameObject and add the mesh
+            GameObject obj = new GameObject();
+            obj.AddComponent<MeshFilter>().mesh = mesh;
+            obj.AddComponent<MeshRenderer>().sharedMaterial = new Material(Shader.Find("Standard"));
+
+            return obj;
+        }
         public static MeshInfos LoadPointCloud(string filePath, int maximumVertex = 6000000, float fScale = 1.0f)
         {
             MeshInfos data = new MeshInfos();
