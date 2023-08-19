@@ -56,7 +56,7 @@ public class MainWindow : EditorWindow
             var stopButtonContent = EditorGUIUtility.IconContent("d_PreMatQuad");
             var pauseButtonContent = EditorGUIUtility.IconContent("PauseButton");
 
-
+            
             if (!isPlaying)
             {
                 if (GUILayout.Button(playButtonContent))
