@@ -2,77 +2,74 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.Experimental.GraphView;
+using UnityEditor.Graphs;
 using UnityEngine;
-
+using System.IO;
 public class MainWindow : EditorWindow
 {
-    string dataset_path;
+    string scene_path;
 
     Vector2 scrollPos = Vector2.zero;
-    public bool isLoaded = false;
     public bool isPlaying = false;
+    [SerializeField] BOPDatasetParams datasetParams;
 
-    
+
     private void OnGUI()
     {
         scrollPos = EditorGUILayout.BeginScrollView(scrollPos, false, false);
 
         EditorGUILayout.BeginVertical(GUI.skin.box);
-        if (GUILayout.Button("Select dataset path"))
+        EditorGUILayout.LabelField("Scene path: " + scene_path, EditorStyles.boldLabel);
+
+        //dataset_name = EditorGUILayout.TextField("Dataset name", dataset_name);
+        //dataset_split = EditorGUILayout.TextField("Dataset split", dataset_split);
+
+        if (GUILayout.Button("Select scene path"))
         {
-            var path = EditorUtility.OpenFolderPanel("Select dataset path", dataset_path, "");
+            var path = EditorUtility.OpenFolderPanel("Select scene path", scene_path, "");
 
             if (!string.IsNullOrEmpty(path))
             {
-                dataset_path = path;
+                scene_path = path;
                 SavePreperence();
             }
-
+            try
+            {
+                datasetParams = new BOPDatasetParams(scene_path);
+            }
+            catch (DirectoryNotFoundException e)
+            {
+                Debug.LogError(e.Message);
+                datasetParams = null;
+            }
         }
-        EditorGUILayout.LabelField(dataset_path, EditorStyles.boldLabel);
         EditorGUILayout.EndVertical();
 
-        if (!string.IsNullOrEmpty(dataset_path))
+        if (datasetParams != null)
         {
             EditorGUILayout.BeginHorizontal();
             var playButtonContent = EditorGUIUtility.IconContent("PlayButton On");
             var stopButtonContent = EditorGUIUtility.IconContent("d_PreMatQuad");
             var pauseButtonContent = EditorGUIUtility.IconContent("PauseButton");
-            if (!isLoaded && GUILayout.Button(playButtonContent))
-            {
 
-                LoadAll();
-                isLoaded = true;
-                isPlaying = false;
-            }
-
-            else if (isLoaded && GUILayout.Button(stopButtonContent))
+            if (!isPlaying)
             {
-                DestroyAll();
-                isLoaded = false;
-                isPlaying = false;
-            }
-
-            if (isPlaying)
-            {
-                if (GUILayout.Button(pauseButtonContent))
-                {
-                    //just stop
-                    isPlaying = !isPlaying;
-                }
+                if (GUILayout.Button(playButtonContent))
+                    isPlaying = true;
             }
             else
             {
-                var backup = GUI.backgroundColor;
-                GUI.backgroundColor = Color.cyan;
                 if (GUILayout.Button(pauseButtonContent))
-                {
-                    //just resume
                     isPlaying = !isPlaying;
-                }
-                GUI.backgroundColor = backup;
+            }
+            if (GUILayout.Button(stopButtonContent))
+            {
+                DestroyAll();
+                datasetParams = null;
+                isPlaying = false;
             }
             EditorGUILayout.EndHorizontal();
+
         }
 
 
@@ -81,28 +78,27 @@ public class MainWindow : EditorWindow
 
     void LoadAll()
     {
-     
+
         // Check all the number of samples.
-        
+
         //
     }
     void DestroyAll()
     {
-        
+
     }
 
     public void LoadPreperence()
     {
         if (PlayerPrefs.HasKey("scene_path"))
         {
-            dataset_path = PlayerPrefs.GetString("dataset_path");
-            Debug.Log(dataset_path);
+            scene_path = PlayerPrefs.GetString("scene_path");
         }
     }
 
     public void SavePreperence()
     {
-        PlayerPrefs.SetString("dataset_path", dataset_path);
+        PlayerPrefs.SetString("scene_path", scene_path);
     }
 
 
@@ -125,7 +121,7 @@ public class MainWindow : EditorWindow
             {
                 instance = GetWindow<MainWindow>(false, "BOPHelper");
                 instance.LoadPreperence();
-                
+
                 return instance;
             }
         }

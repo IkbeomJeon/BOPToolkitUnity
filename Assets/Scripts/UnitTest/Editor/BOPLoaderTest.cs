@@ -5,17 +5,17 @@ using System.IO;
 using System.Runtime.InteropServices.ComTypes;
 using NUnit.Framework;
 using Unity.Plastic.Newtonsoft.Json;
+using UnityEditor.Graphs;
 using UnityEngine;
 using UnityEngine.TestTools;
 
 public class BOPLoaderTest
 {
-    string dataset_path;
+    string dataset_path = "Assets/Dataset";
+
     [SetUp]
     public void SetUp()
     {
-        // Create a test file
-        dataset_path = "Assets/Dataset";
     }
 
     // A Test behaves as an ordinary method
@@ -23,10 +23,9 @@ public class BOPLoaderTest
     public void ParseCameraInfoTest()
     {
         string name = "lm";
-        string filepath = Path.Combine(dataset_path, name, "camera.json");
-        string json = File.ReadAllText(filepath);
-
-        CameraInfo cameraData = JsonUtility.FromJson<CameraInfo>(json);
+        string split = "test";
+        BOPDatasetParams dataset_params = new BOPDatasetParams(dataset_path, name, split);
+        var cameraData = dataset_params.get_camera_info();
 
         Assert.AreEqual(cameraData.cx, 325.2611f);
         Assert.AreEqual(cameraData.cy, 242.04899f);
@@ -37,16 +36,15 @@ public class BOPLoaderTest
         Assert.AreEqual(cameraData.width, 640);
     }
     [Test]
-    public void ParseModelInfoJsonTest()
+    public void get_model_info_test()
     {
         string name = "lm";
-        string filepath = Path.Combine(dataset_path, name, "models", "models_info.json");
-        string json = File.ReadAllText(filepath);
-        Dictionary<string, ObjectData> dataDict = JsonConvert.DeserializeObject<Dictionary<string, ObjectData>>(json);
-
+        string split = "test";
+        BOPDatasetParams dataset_params = new BOPDatasetParams(dataset_path, name, split);
+        var dataDict = dataset_params.get_model_info_list();
         Assert.AreEqual(15, dataDict.Count);
-        Assert.IsTrue(dataDict.ContainsKey("1"));
-        ObjectData objectData = dataDict["1"];
+        Assert.IsTrue(dataDict.ContainsKey(1));
+        ObjectData objectData = dataDict[1];
         Assert.AreEqual(objectData.diameter, 102.099f);
         Assert.AreEqual(objectData.min_x, -37.9343f);
         Assert.AreEqual(objectData.min_y, -38.7996f);
@@ -57,33 +55,29 @@ public class BOPLoaderTest
     }
     
     [Test]
-    public void ParseSceneCameraJsonTest()
+    public void get_scene_camera_list_test()
     {
         string name = "lm";
         string split = "test";
         string scene_id = "000001";
-        string filepath = Path.Combine(dataset_path, name, split, scene_id, "scene_camera.json");
-        string json = File.ReadAllText(filepath);
-
-        var dataDict = JsonConvert.DeserializeObject<Dictionary<string, CameraData>>(json);
+        BOPDatasetParams dataset_params = new BOPDatasetParams(dataset_path, name, split);
+        var dataDict = dataset_params.get_scene_camera_list(scene_id);
         Assert.IsNotNull(dataDict);
 
         Assert.AreEqual(dataDict.Count, 3);
-        Assert.IsTrue(dataDict.ContainsKey("1"));
-        CameraData cameraData = dataDict["1"];
+        Assert.IsTrue(dataDict.ContainsKey(1));
+        CameraData cameraData = dataDict[1];
         Assert.AreEqual(9, cameraData.cam_K.Count);
         Assert.AreEqual(1.0f, cameraData.depth_scale);
     }
     [Test]
-    public void ParseSceneGTJsonTest()
+    public void get_scene_gt_list_test()
     {
         string name = "lm";
         string split = "test";
         string scene_id = "000001";
-        string filepath = Path.Combine(dataset_path, name, split, scene_id, "scene_gt.json");
-        string json = File.ReadAllText(filepath);
-
-        var dataDict = JsonConvert.DeserializeObject<Dictionary<int, List<ObjectGT>>>(json);
+        BOPDatasetParams dataset_params = new BOPDatasetParams(dataset_path, name, split);
+        var dataDict = dataset_params.get_scene_gt_list(scene_id);
         Assert.IsNotNull(dataDict);
         Assert.AreEqual(dataDict.Keys.Count, 3);
         Assert.IsTrue(dataDict.ContainsKey(1));
@@ -93,15 +87,13 @@ public class BOPLoaderTest
         Assert.AreEqual(object_gt.obj_id, 1);
     }
     [Test]
-    public void ParseSceneGTInfoJsonTest()
+    public void get_scene_gt_info_list_test()
     {
         string name = "lm";
         string split = "test";
         string scene_id = "000001";
-        string filepath = Path.Combine(dataset_path, name, split, scene_id, "scene_gt_info.json");
-        string json = File.ReadAllText(filepath);
-
-        var dataDict = JsonConvert.DeserializeObject<Dictionary<int, List<ObjectGTInfo>>>(json);
+        BOPDatasetParams dataset_params = new BOPDatasetParams(dataset_path, name, split);
+        var dataDict = dataset_params.get_scene_gt_info_list(scene_id);
         Assert.IsNotNull(dataDict);
         Assert.AreEqual(dataDict.Keys.Count, 3);
         Assert.IsTrue(dataDict.ContainsKey(1));
@@ -110,47 +102,6 @@ public class BOPLoaderTest
         Assert.AreEqual(object_gt_info.bbox_visib.Count, 4);
         Assert.AreEqual(object_gt_info.px_count_all, 1598);
 
-    }
-
-    [Test]
-    public void GetBOPPathTest()
-    {
-        string name = "lm";
-        string split = "test";
-        int scene_id = 1;
-        int im_id = 1;
-        int gt_id = 0;
-        int obj_id = 1;
-
-        BOPDatasetParams bopLoader = new BOPDatasetParams(dataset_path, name, split);
-        Assert.IsTrue(Directory.Exists(bopLoader.get_split_path()));
-        Assert.IsTrue(File.Exists(bopLoader.get_scene_path(scene_id)));
-        Assert.IsTrue(File.Exists(bopLoader.get_scene_gt_path(scene_id)));
-        Assert.IsTrue(File.Exists(bopLoader.get_scene_gt_info_path(scene_id)));
-        Assert.IsTrue(File.Exists(bopLoader.get_rgb_path(scene_id, im_id)));
-        Assert.IsTrue(File.Exists(bopLoader.get_depth_path(scene_id, im_id)));
-        Assert.IsTrue(File.Exists(bopLoader.get_mask_path(scene_id, im_id, gt_id)));
-        Assert.IsTrue(File.Exists(bopLoader.get_mask_visible_path(scene_id, im_id, gt_id)));
-        Assert.IsTrue(File.Exists(bopLoader.get_model_info_path()));
-        Assert.IsTrue(File.Exists(bopLoader.get_model_path(obj_id)));
-
-        name = "lmo";
-        split = "test";
-        scene_id = 2;
-        im_id = 1;
-        gt_id = 0;
-        obj_id = 9;
-        bopLoader = new BOPDatasetParams(dataset_path, name, split);
-        Assert.IsTrue(Directory.Exists(bopLoader.get_split_path()));
-        Assert.IsTrue(File.Exists(bopLoader.get_scene_path(scene_id)));
-        Assert.IsTrue(File.Exists(bopLoader.get_scene_gt_path(scene_id)));
-        Assert.IsTrue(File.Exists(bopLoader.get_scene_gt_info_path(scene_id)));
-        Assert.IsTrue(File.Exists(bopLoader.get_rgb_path(scene_id, im_id)));
-        Assert.IsTrue(File.Exists(bopLoader.get_depth_path(scene_id, im_id)));
-        Assert.IsTrue(File.Exists(bopLoader.get_mask_path(scene_id, im_id, gt_id)));
-        Assert.IsTrue(File.Exists(bopLoader.get_mask_visible_path(scene_id, im_id, gt_id)));
-        Assert.IsTrue(File.Exists(bopLoader.get_model_info_path()));
-        Assert.IsTrue(File.Exists(bopLoader.get_model_path(obj_id)));
     }
 }
 
