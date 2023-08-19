@@ -9,12 +9,19 @@ using UnityEngine;
 [Serializable]
 public class BOPDatasetParams
 {
-    string base_path;
-    string split_path;
+    public string base_path;
+    public string split_path;
+    public int scene_id
+    {
+        get
+        {
+            return int.Parse(loaded_scene_name);
+        }
+    }
     string loaded_scene_name;
-    string rgb_ext = "png";
-    string gray_ext = "png";
-    string depth_ext = "png";
+    public string rgb_ext = "png";
+    public string gray_ext = "png";
+    public string depth_ext = "png";
 
     [SerializeField]
     public CameraInfo camera_info;
@@ -118,10 +125,6 @@ public class BOPDatasetParams
         return dataDict;
     }
 
-    public string get_base_path()
-    {
-        return base_path;
-    }
 }
 public static class BOPPath
 {
@@ -157,7 +160,6 @@ public static class BOPPath
     {
         return string.Format("{0}/{1:D6}/{2}/{3:D6}_{4:D6}.png", split_path, scene_id, "mask_visib", im_id, gt_id);
     }
-
     public static string get_model_path(string base_path, int obj_id)
     {
         return string.Format("{0}/{1}/obj_{2:D6}.ply", base_path, "models", obj_id);

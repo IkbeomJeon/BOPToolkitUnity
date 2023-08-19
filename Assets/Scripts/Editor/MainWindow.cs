@@ -45,7 +45,7 @@ public class MainWindow : EditorWindow
             }
             catch (Exception e)
             {
-                Debug.LogError(e.Message);
+                Debug.LogException(e);
                 datasetParams = null;
             }
         }
@@ -122,7 +122,7 @@ public class MainWindow : EditorWindow
     
     void UpdateFrame()
     {
-        Debug.Log(curr_frame_id);
+        bop_frame.UpdateModels(curr_frame_id, datasetParams);
     }
 
     public void LoadPreperence()

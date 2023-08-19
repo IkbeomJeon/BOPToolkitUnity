@@ -111,7 +111,7 @@ public class BOPLoaderTest
         string split = "test";
         string scene_id = "000001";
         BOPDatasetParams dataset_params = new BOPDatasetParams(dataset_path, name, split);
-        var base_path = dataset_params.get_base_path();
+        var base_path = dataset_params.base_path;
         var model_path = BOPPath.get_model_path(base_path, 1);
         var go = PointCloudGenerator.LoadPly(model_path);
         
