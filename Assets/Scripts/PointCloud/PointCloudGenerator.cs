@@ -90,7 +90,7 @@ namespace PointCloudExporter
                     string[] parts = line.Split(' ');
                     if (vertexCount > 0)
                     {
-                        vertices.Add(new Vector3(float.Parse(parts[0]), float.Parse(parts[1]), float.Parse(parts[2])) * 0.001f);
+                        vertices.Add(new Vector3(float.Parse(parts[0]), float.Parse(parts[1]), float.Parse(parts[2])) * 0.01f);
                         colors.Add(new Color(float.Parse(parts[6])/255f, float.Parse(parts[7])/255f, float.Parse(parts[8])/255f, float.Parse(parts[9])/255f));
                         vertexCount--;
                     }
