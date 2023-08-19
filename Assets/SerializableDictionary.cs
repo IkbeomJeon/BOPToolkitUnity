@@ -1,13 +1,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-[Serializable]
-public class DictionaryOfStringAndGameObject : SerializableDictionary<string, GameObject> { }
-
-[Serializable]
-public class DictionaryOfStringAndString : SerializableDictionary<string, string> { }
-
-
 
 [Serializable]
 public class SerializableDictionary<TKey, TValue> : Dictionary<TKey, TValue>, ISerializationCallbackReceiver

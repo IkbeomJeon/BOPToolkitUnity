@@ -5,6 +5,8 @@ using UnityEditor.Experimental.GraphView;
 using UnityEditor.Graphs;
 using UnityEngine;
 using System.IO;
+using System;
+
 public class MainWindow : EditorWindow
 {
     string scene_path;
@@ -21,8 +23,7 @@ public class MainWindow : EditorWindow
         EditorGUILayout.BeginVertical(GUI.skin.box);
         EditorGUILayout.LabelField("Scene path: " + scene_path, EditorStyles.boldLabel);
 
-        //dataset_name = EditorGUILayout.TextField("Dataset name", dataset_name);
-        //dataset_split = EditorGUILayout.TextField("Dataset split", dataset_split);
+
 
         if (datasetParams == null && GUILayout.Button("Select scene path"))
         {
@@ -36,8 +37,9 @@ public class MainWindow : EditorWindow
             try
             {
                 datasetParams = new BOPDatasetParams(scene_path);
+                EditorGUILayout.LabelField("Scene path: " + scene_path, EditorStyles.boldLabel);
             }
-            catch (DirectoryNotFoundException e)
+            catch (Exception e)
             {
                 Debug.LogError(e.Message);
                 datasetParams = null;
@@ -47,10 +49,13 @@ public class MainWindow : EditorWindow
 
         if (datasetParams != null)
         {
+            EditorGUILayout.LabelField("Total frames", datasetParams.scene_camera.Count.ToString());
+
             EditorGUILayout.BeginHorizontal();
             var playButtonContent = EditorGUIUtility.IconContent("PlayButton On");
             var stopButtonContent = EditorGUIUtility.IconContent("d_PreMatQuad");
             var pauseButtonContent = EditorGUIUtility.IconContent("PauseButton");
+
 
             if (!isPlaying)
             {

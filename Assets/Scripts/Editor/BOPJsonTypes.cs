@@ -22,7 +22,7 @@ public class SymmetryData
 }
 
 [System.Serializable]
-public class ObjectData
+public class ModelInfo
 {
     public float diameter;
     public float min_x;
@@ -35,13 +35,13 @@ public class ObjectData
     public List<List<float>> symmetries_discrete = new List<List<float>>();
 }
 [System.Serializable]
-public class CameraData
+public class SceneCamera
 {
     public List<float> cam_K;
     public float depth_scale;
 }
 [Serializable]
-public class ObjectGT
+public class SceneGT
 {
     public List<float> cam_R_m2c;
     public List<float> cam_t_m2c;
@@ -50,7 +50,7 @@ public class ObjectGT
 
 
 [Serializable]
-public class ObjectGTInfo
+public class SceneGTInfo
 {
     public List<int> bbox_obj;
     public List<int> bbox_visib;
