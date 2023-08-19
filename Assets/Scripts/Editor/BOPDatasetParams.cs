@@ -34,9 +34,6 @@ public class BOPDatasetParams
         
         if (!Directory.Exists(split_path))
             throw new DirectoryNotFoundException("The path not found: " + split_path);
-
-        camera_info = load_camera_info();
-        model_info = load_model_info();
     }
     public BOPDatasetParams(string scene_path)
     {
@@ -46,7 +43,9 @@ public class BOPDatasetParams
         
         if (!Directory.Exists(split_path))
             throw new DirectoryNotFoundException("The path not found: " + split_path);
-
+    }
+    public void load_scene()
+    {
         camera_info = load_camera_info();
         model_info = load_model_info();
         scene_camera = load_scene_camera();
@@ -55,9 +54,9 @@ public class BOPDatasetParams
     }
     bool is_scene_valid(int scene_id)
     {
-        if (!File.Exists(get_scene_path(scene_id)) ||
-            !File.Exists(get_scene_gt_path(scene_id)) ||
-            !File.Exists(get_scene_gt_info_path(scene_id)))
+        if (!File.Exists(BOPPath.get_scene_path(split_path, scene_id)) ||
+            !File.Exists(BOPPath.get_scene_gt_path(split_path, scene_id)) ||
+            !File.Exists(BOPPath.get_scene_gt_info_path(split_path, scene_id)))
             return false;
         
         else return true;
@@ -73,7 +72,7 @@ public class BOPDatasetParams
 
     public SerializableDictionary<int, ModelInfo> load_model_info()
     {
-        string filepath = get_model_info_path();
+        string filepath = BOPPath.get_model_info_path(base_path);
         string json = File.ReadAllText(filepath);
         var dataDict = JsonConvert.DeserializeObject<SerializableDictionary<int, ModelInfo>>(json);
         return dataDict;
@@ -119,46 +118,52 @@ public class BOPDatasetParams
         return dataDict;
     }
 
-    string get_scene_path(int scene_id)
+    public string get_base_path()
+    {
+        return base_path;
+    }
+}
+public static class BOPPath
+{
+    public static string get_scene_path(string split_path, int scene_id)
     {
         return string.Format("{0}/{1:D6}/{2}", split_path, scene_id, "scene_camera.json");
     }
-    string get_scene_gt_path(int scene_id)
+    public static string get_scene_gt_path(string split_path, int scene_id)
     {
         return string.Format("{0}/{1:D6}/{2}", split_path, scene_id, "scene_gt.json");
     }
-    string get_scene_gt_info_path(int scene_id)
+    public static string get_scene_gt_info_path(string split_path, int scene_id)
     {
         return string.Format("{0}/{1:D6}/{2}", split_path, scene_id, "scene_gt_info.json");
     }
-    string get_rgb_path(int scene_id, int im_id)
+    public static string get_rgb_path(string split_path, int scene_id, int im_id, string rgb_ext)
     {
         return string.Format("{0}/{1:D6}/{2}/{3:D6}.{4}", split_path, scene_id, "rgb", im_id, rgb_ext);
     }
-    string get_depth_path(int scene_id, int im_id)
+    public static string get_depth_path(string split_path, int scene_id, int im_id, string depth_ext)
     {
         return string.Format("{0}/{1:D6}/{2}/{3:D6}.{4}", split_path, scene_id, "depth", im_id, depth_ext);
     }
-    string get_gray_path(int scene_id, int im_id)
+    public static string get_gray_path(string split_path, int scene_id, int im_id, string depth_ext)
     {
         return string.Format("{0}/{1:D6}/{2}/{3:D6}.{4}", split_path, scene_id, "gray", im_id, depth_ext);
     }
-    string get_mask_path(int scene_id, int im_id, int gt_id)
+    public static string get_mask_path(string split_path, int scene_id, int im_id, int gt_id)
     {
         return string.Format("{0}/{1:D6}/{2}/{3:D6}_{4:D6}.png", split_path, scene_id, "mask", im_id, gt_id);
     }
-    string get_mask_visible_path(int scene_id, int im_id, int gt_id)
+    public static string get_mask_visible_path(string split_path, int scene_id, int im_id, int gt_id)
     {
         return string.Format("{0}/{1:D6}/{2}/{3:D6}_{4:D6}.png", split_path, scene_id, "mask_visib", im_id, gt_id);
     }
 
-    string get_model_path(int obj_id)
+    public static string get_model_path(string base_path, int obj_id)
     {
-        return string.Format("{0}/{1}/obj_{1:D6}.ply", base_path, "models", obj_id);
+        return string.Format("{0}/{1}/obj_{2:D6}.ply", base_path, "models", obj_id);
     }
-    string get_model_info_path()
+    public static string get_model_info_path(string base_path)
     {
         return string.Format("{0}/{1}/{2}", base_path, "models", "models_info.json");
     }
-
 }

@@ -16,6 +16,7 @@ public class MainWindow : EditorWindow
     [SerializeField] BOPDatasetParams datasetParams;
 
     int curr_frame_id;
+    BOPFrame bop_frame = new BOPFrame();
 
     private void OnGUI()
     {
@@ -23,8 +24,6 @@ public class MainWindow : EditorWindow
 
         EditorGUILayout.BeginVertical(GUI.skin.box);
         EditorGUILayout.LabelField("Scene path: " + scene_path, EditorStyles.boldLabel);
-
-
 
         if (datasetParams == null && GUILayout.Button("Select scene path"))
         {
@@ -41,6 +40,8 @@ public class MainWindow : EditorWindow
                 EditorGUILayout.LabelField("Scene path: " + scene_path, EditorStyles.boldLabel);
 
                 curr_frame_id = 0;
+                datasetParams.load_scene();
+                bop_frame.CreateFrame(curr_frame_id, datasetParams);
             }
             catch (Exception e)
             {
@@ -70,9 +71,12 @@ public class MainWindow : EditorWindow
             }
             if (GUILayout.Button(stopButtonContent))
             {
-                DestroyAll();
                 datasetParams = null;
                 isPlaying = false;
+                curr_frame_id = 0;
+                bop_frame.Destroy();
+
+
             }
             EditorGUILayout.EndHorizontal();
             FrameSelectionMenu();
@@ -86,21 +90,39 @@ public class MainWindow : EditorWindow
     {
         if (datasetParams == null)
             return;
-
+        
         int total_frame = datasetParams.scene_camera.Count;
         EditorGUILayout.LabelField("Total frames", datasetParams.scene_camera.Count.ToString());
         var new_frame_id = EditorGUILayout.IntSlider(curr_frame_id, 0, total_frame);
+
+        if (new_frame_id != curr_frame_id)
+        {
+            curr_frame_id = new_frame_id;
+            UpdateFrame();
+        }
+
+        EditorGUILayout.BeginHorizontal();
+        //Debug.Log(frame_interval_tick);
+        if ((Event.current.keyCode == KeyCode.A || GUILayout.Button("< (A)")) && curr_frame_id > 0)
+        {
+            curr_frame_id--;
+            //Repaint();
+            UpdateFrame();
+        }
+
+        if ((Event.current.keyCode == KeyCode.D || GUILayout.Button("(D) >")) && curr_frame_id < total_frame-1)
+        {
+            curr_frame_id++;
+            //Repaint();
+            UpdateFrame();
+        }
+        EditorGUILayout.EndHorizontal();
     }
-    void LoadAll()
+   
+    
+    void UpdateFrame()
     {
-
-        // Check all the number of samples.
-
-        //
-    }
-    void DestroyAll()
-    {
-
+        Debug.Log(curr_frame_id);
     }
 
     public void LoadPreperence()
