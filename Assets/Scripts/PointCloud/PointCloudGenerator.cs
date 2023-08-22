@@ -59,9 +59,11 @@ namespace PointCloudExporter
                     string[] parts = line.Split(' ');
                     if (vertexCount > 0)
                     {
-                        vertices.Add(new Vector3(float.Parse(parts[0]), float.Parse(parts[1]), float.Parse(parts[2])) * 0.001f);
-                        
-                        if(textureFileName=="")
+                        //vertices.Add(conversionMatrix.MultiplyPoint(vert));
+                        vertices.Add(new Vector3(float.Parse(parts[0]), float.Parse(parts[2]), float.Parse(parts[1])) * 0.001f);
+                        //vertices.Add(new Vector3(float.Parse(parts[0]), float.Parse(parts[2]), float.Parse(parts[1])) * 0.01f);
+
+                        if (textureFileName=="")
                             colors.Add(new Color(float.Parse(parts[6]) / 255f, float.Parse(parts[7]) / 255f, float.Parse(parts[8]) / 255f, float.Parse(parts[9]) / 255f));
                         else
                             uv.Add(new Vector2(float.Parse(parts[6]), float.Parse(parts[7])));
@@ -71,8 +73,8 @@ namespace PointCloudExporter
                     else if (faceCount > 0)
                     {
                         triangles.Add(int.Parse(parts[1]));
-                        triangles.Add(int.Parse(parts[2]));
                         triangles.Add(int.Parse(parts[3]));
+                        triangles.Add(int.Parse(parts[2]));
                         faceCount--;
                     }
                 }

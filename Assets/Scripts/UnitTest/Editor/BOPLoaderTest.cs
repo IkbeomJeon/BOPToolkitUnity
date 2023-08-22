@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices.ComTypes;
 using NUnit.Framework;
+using NUnit.Framework.Internal;
 using PointCloudExporter;
 using Unity.Plastic.Newtonsoft.Json;
 using UnityEditor.Graphs;
@@ -115,6 +116,98 @@ public class BOPLoaderTest
         var model_path = BOPPath.get_model_path(base_path, 1);
         var go = PointCloudGenerator.LoadPly(model_path);
         
+    }
+    [Test]
+    public void MatTest()
+    {
+        GameObject test = new GameObject();
+
+        //test.transform.Rotate(-90, 0, 0);
+        //test.transform.localScale = new Vector3(1, -1, 1);
+
+        Matrix4x4 conversionMatrix = new Matrix4x4();
+        conversionMatrix.SetRow(0, new Vector4(1, 0, 0, 0));
+        conversionMatrix.SetRow(1, new Vector4(0, 0, 1, 0));
+        conversionMatrix.SetRow(2, new Vector4(0, 1, 0, 0));
+        conversionMatrix.SetRow(3, new Vector4(0, 0, 0, 1));
+        conversionMatrix = conversionMatrix * test.transform.localToWorldMatrix;
+
+        ////Debug.Log(resultMatrix);
+
+        //ApplyTransform(test, conversionMatrix);
+        ////test.transform.Rotate(270, 0, 0);
+        test.transform.position = conversionMatrix.GetColumn(3);
+        test.transform.rotation = conversionMatrix.rotation;
+
+
+        Debug.Log(test.transform.rotation.eulerAngles);
+        Debug.Log(test.transform.localScale);
+        Debug.Log(test.transform.worldToLocalMatrix);
+        Debug.Log(test.transform.localToWorldMatrix);
+
+    }
+
+    /*
+     * 0.14383	-0.73813	-0.65915	4.79946
+    -0.73813	0.36363	-0.56827	4.13776
+-0.65915	-0.56827	0.49254	3.69499
+0.00000	0.00000	0.00000	1.00000
+    
+    0.95182	-0.08630	-0.29426	2.47345
+-0.08630	0.84543	-0.52707	4.43037
+-0.29426	-0.52707	-0.79725	15.10695
+0.00000	0.00000	0.00000	1.00000
+    
+    */
+
+    [Test]
+    public void MatTest2()
+    {
+        var cam1 = GameObject.Find("Camera1");
+        var cam2 = GameObject.Find("Camera2");
+      
+
+        Debug.Log(cam1.transform.localToWorldMatrix);
+        Debug.Log(cam2.transform.localToWorldMatrix);
+
+        //Debug.Log(cam2.transform.localToWorldMatrix * cam1.transform.localToWorldMatrix.inverse);
+
+        //var env = GameObject.Find("Frame");
+        //Debug.Log(env.transform.localToWorldMatrix * cam1.transform.localToWorldMatrix);
+
+        Matrix4x4 conversionMatrix = new Matrix4x4();
+        conversionMatrix.SetRow(0, new Vector4(1, 0, 0, 0));
+        conversionMatrix.SetRow(1, new Vector4(0, -1, 0, 0));
+        conversionMatrix.SetRow(2, new Vector4(0, 0, -1, 0));
+        conversionMatrix.SetRow(3, new Vector4(0, 0, 0, 1));
+        conversionMatrix = cam1.transform.localToWorldMatrix * conversionMatrix;
+        Debug.Log(conversionMatrix);
+
+    }
+    public void ApplyTransform(GameObject target, Matrix4x4 matrix)
+    {
+        // 위치 추출
+        Vector3 position = matrix.GetColumn(3);  // 4th column
+
+        // 스케일 추출
+        Vector3 scale = new Vector3(
+            matrix.GetColumn(0).magnitude,
+            matrix.GetColumn(1).magnitude,
+            matrix.GetColumn(2).magnitude
+        );
+        //Debug.Log(scale);
+
+        // 회전 추출
+        Vector3 forward = -matrix.GetColumn(1);
+        Vector3 up = matrix.GetColumn(2);
+        Quaternion rotation = Quaternion.LookRotation(forward, up);
+
+        // Transform에 적용
+        target.transform.localPosition = position;
+        target.transform.localRotation = rotation;
+        target.transform.localScale = scale;
+
+
     }
 }
 

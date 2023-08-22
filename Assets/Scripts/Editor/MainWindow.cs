@@ -122,7 +122,7 @@ public class MainWindow : EditorWindow
     
     void UpdateFrame()
     {
-        bop_frame.UpdateModels(curr_frame_id, datasetParams);
+        bop_frame.UpdateScene(curr_frame_id, datasetParams);
     }
 
     public void LoadPreperence()
