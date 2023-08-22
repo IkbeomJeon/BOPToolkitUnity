@@ -208,8 +208,10 @@ public class BOPLoaderTest
         int im_id = 1;
         
         BOPDatasetParams dataset_params = new BOPDatasetParams(dataset_path, name, split);
+        var rgb_path = BOPPath.get_rgb_path(dataset_params.split_path, scene_id, im_id, dataset_params.rgb_ext);
         var depth_path = BOPPath.get_depth_path(dataset_params.split_path, scene_id, im_id, dataset_params.depth_ext);
 
+        var rgbTxeture = TextureIO.LoadTexture(rgb_path);
         var depthTexture = TextureIO.LoadTexture(depth_path);
         Assert.IsNotNull(depthTexture);
         Assert.AreEqual(depthTexture.width, 640);
@@ -220,6 +222,7 @@ public class BOPLoaderTest
         int resolutionY = depthTexture.height;
         
         Vector3[] pointCloudData = new Vector3[resolutionX * resolutionY];
+        Color[] colorData = rgbTxeture.GetPixels();
         ComputeBuffer pointCloudBuffer = new ComputeBuffer(pointCloudData.Length, 3 * sizeof(float));
 #if UNITY_EDITOR
         ComputeShader computeShader = AssetDatabase.LoadAssetAtPath<ComputeShader>("Assets/Scripts/DepthImage2PointCloud.compute");
@@ -239,13 +242,7 @@ public class BOPLoaderTest
         computeShader.Dispatch(kernel, resolutionX / 8, resolutionY / 8, 1);
 
         pointCloudBuffer.GetData(pointCloudData);
-        //foreach(var pointCloud in pointCloudData )
-        //{
-        //    if(pointCloud.x != 0)
-        //    {
-        //        int a = 3;
-        //    }    
-        //}
+
         pointCloudBuffer.Release();
 
         GameObject pointCloud = new GameObject();
@@ -256,7 +253,6 @@ public class BOPLoaderTest
 
         var meshArray = new Mesh[meshCount];
 
-        //int index = 0;
         int meshIndex = 0;
         int vertexIndex = 0;
         int resolution = GetNearestPowerOfTwo(Mathf.Sqrt(vertexCount));
@@ -264,36 +260,28 @@ public class BOPLoaderTest
         {
             int meshVertexCount = Mathf.Min(verticesMax, vertexCount - vertexIndex);
             Vector3[] vertices = new Vector3[meshVertexCount];
+            Color[] color = new Color[meshVertexCount];
             int[] indices = new int[meshVertexCount];
             for (int i = 0; i < meshVertexCount; i++)
             {
+                color[i] = colorData[vertexIndex];
                 vertices[i] = pointCloudData[vertexIndex];
                 indices[i] = i;
                 vertexIndex++;
-                //index++;
             }
 
             Mesh mesh = new Mesh();
             mesh.vertices = vertices;
+            mesh.colors = color;
             mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 100f);
             mesh.SetIndices(indices, MeshTopology.Points, 0);
             meshArray[meshIndex] = mesh;
-            var material = new Material(Shader.Find("Custom/PointCloud"));
+            var material = new Material(Shader.Find("Unlit/PointCloud"));
+            material.SetFloat("_Size", 0.001f);
             GameObject go = CreateGameObjectWithMesh(mesh, material, meshIndex.ToString(), pointCloud.transform);
 
             meshIndex++;
         }
-
-        //    Mesh mesh = new Mesh();
-        //mesh.vertices = pointCloudData;
-        //mesh.SetIndices(System.Linq.Enumerable.Range(0, pointCloudData.Length).ToArray(), MeshTopology.Points, 0);
-        
-
-        //var meshfilter = pointCloud.AddComponent<MeshFilter>();
-        //meshfilter.sharedMesh = mesh;
-
-        //var meshRenderer = pointCloud.AddComponent<MeshRenderer>();
-        //meshRenderer.sharedMaterial = new Material(Shader.Find("Custom/PointCloud"));
         for(int i = 0; i < 100000; i++)
         {
             yield return null;
