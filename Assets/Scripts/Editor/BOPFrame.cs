@@ -67,6 +67,8 @@ static class CoordinateUtil
     }
 }
 
+[Serializable]
+public class DictIntGameObject : SerializableDictionary<int, GameObject> { }
 
 [Serializable]
 public class BOPFrame
@@ -78,7 +80,7 @@ public class BOPFrame
     public GameObject go_camera;
 
     [SerializeField]
-    public SerializableDictionary<int, GameObject> go_models = new SerializableDictionary<int, GameObject>();
+    public DictIntGameObject go_models = new DictIntGameObject();
 
     [SerializeField]
     public GameObject go_poses;
@@ -134,14 +136,14 @@ public class BOPFrame
     }
     void LoadModel(string base_path, int obj_id, SerializableDictionary<int, ModelInfo> model_info)
     {
-        //var output  = new SerializableDictionary<int, GameObject>();
+        //var output  = new DictIntGameObject<int, GameObject>();
 
         //var go_model = new GameObject(model.Key.ToString());
         string model_path = BOPPath.get_model_path(base_path, obj_id);
         //var mesh_info = PointCloudGenerator.LoadPointCloud(model_path);
         //var go_model = PointCloudGenerator.ToGameObject(mesh_info, model.Key.ToString(), 0.1f);
         var go_model = PointCloudGenerator.LoadPly(model_path);
-        //go_model.transform.parent = frame_root.transform;
+        go_model.transform.parent = frame_root.transform;
         go_model.name = obj_id.ToString();
 
         //go_model.transform.localScale = new Vector3(1, -1, 1);
@@ -340,7 +342,7 @@ public class BOPFrame
         GameObject.DestroyImmediate(frame_root);
         GameObject.DestroyImmediate(go_poses);
     }
-    //GameObject CreteteObjects(GameObject frame, SceneGT sceneGT, SerializableDictionary<int, ModelInfo> modelInfo)
+    //GameObject CreteteObjects(GameObject frame, SceneGT sceneGT, DictIntGameObject<int, ModelInfo> modelInfo)
     //{
     //    GameObject objects = new GameObject("Objects");
     //    objects.transform.parent = frame.transform;

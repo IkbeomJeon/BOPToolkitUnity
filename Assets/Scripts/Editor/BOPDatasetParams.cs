@@ -5,7 +5,6 @@ using System.Linq;
 using Unity.Plastic.Newtonsoft.Json;
 using UnityEngine;
 
-
 [Serializable]
 public class BOPDatasetParams
 {

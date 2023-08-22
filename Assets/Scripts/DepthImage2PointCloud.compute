@@ -26,6 +26,12 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     position.y = (id.y - _cy) * depth / _fy;
     position.z = depth;
 
+
     // Store in the output buffer
     _PointCloud[id.y * width + id.x] = position;
+}
+uint2 UnpackUShort2(uint packedValue)
+{
+// The indices are ushorts, which aren't available as a type in compute. Separate them here.
+    return uint2(packedValue & 0xFFFF, packedValue >> 16);
 }

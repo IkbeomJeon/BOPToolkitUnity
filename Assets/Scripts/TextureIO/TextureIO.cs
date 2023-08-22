@@ -144,7 +144,7 @@ public static class TextureIO
         return mat_out;
     }
 
-    public static Texture2D ConvertMattoTexture2D(Mat sourceMat) //The type of sourceMat must be BGRA32
+    public static Texture2D ConvertMattoTexture2D(Mat sourceMat) 
     {
         int imgHeight = sourceMat.Height;
         int imgWidth = sourceMat.Width;
@@ -160,14 +160,26 @@ public static class TextureIO
         
         if (sourceMat.Type() == MatType.CV_16U) //ushort
         {
-            textureFormat = TextureFormat.R16;
+            textureFormat = TextureFormat.RFloat;
             output_texture = new Texture2D(imgWidth, imgHeight, textureFormat, false, false);
             Cv2.Flip(sourceMat, sourceMat, FlipMode.X);
-            output_texture.LoadRawTextureData(sourceMat.Data, (int)(totalBytes));
+            for (int y = 0; y < imgHeight; y++)
+            {
+                for (int x = 0; x < imgWidth; x++)
+                {
+                    ushort d = sourceMat.Get<ushort>(y, x);
+                    output_texture.SetPixel(x, y, new Color(d, 0, 0, 1.0f));
+                }
+            }
+
+            //textureFormat = TextureFormat.R16;
+            //output_texture = new Texture2D(imgWidth, imgHeight, textureFormat, false, false);
+            //Cv2.Flip(sourceMat, sourceMat, FlipMode.X);
+            //output_texture.LoadRawTextureData(sourceMat.Data, (int)(totalBytes));
 
             ////For Test
             //output_texture.Apply();
-         
+
             //var vis_texture = new Texture2D(imgWidth, imgHeight, TextureFormat.RFloat, false, false);
             //var data = output_texture.GetRawTextureData<ushort>();
             //for (var i = 0; i < imgHeight; i++)
