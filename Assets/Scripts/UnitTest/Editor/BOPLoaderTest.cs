@@ -7,9 +7,11 @@ using NUnit.Framework;
 using NUnit.Framework.Internal;
 using PointCloudExporter;
 using Unity.Plastic.Newtonsoft.Json;
+using UnityEditor;
 using UnityEditor.Graphs;
 using UnityEngine;
 using UnityEngine.TestTools;
+using static Codice.CM.Common.Serialization.PacketFileReader;
 
 public class BOPLoaderTest
 {
@@ -147,19 +149,6 @@ public class BOPLoaderTest
 
     }
 
-    /*
-     * 0.14383	-0.73813	-0.65915	4.79946
-    -0.73813	0.36363	-0.56827	4.13776
--0.65915	-0.56827	0.49254	3.69499
-0.00000	0.00000	0.00000	1.00000
-    
-    0.95182	-0.08630	-0.29426	2.47345
--0.08630	0.84543	-0.52707	4.43037
--0.29426	-0.52707	-0.79725	15.10695
-0.00000	0.00000	0.00000	1.00000
-    
-    */
-
     [Test]
     public void MatTest2()
     {
@@ -209,5 +198,51 @@ public class BOPLoaderTest
 
 
     }
+    [Test]
+    public void DepthImage2PointCloudTest()
+    {
+        string name = "lm";
+        string split = "test";
+        int scene_id = 1;
+        int im_id = 1;
+        
+        BOPDatasetParams dataset_params = new BOPDatasetParams(dataset_path, name, split);
+        var depth_path = BOPPath.get_depth_path(dataset_params.split_path, scene_id, im_id, dataset_params.depth_ext);
+
+        var depthTexture = TextureIO.LoadTexture(depth_path);
+        Assert.IsNotNull(depthTexture);
+        Assert.AreEqual(depthTexture.width, 640);
+        Assert.AreEqual(depthTexture.height, 480);
+        Assert.AreEqual(depthTexture.format, TextureFormat.R16);
+
+        int resolutionX = depthTexture.width;
+        int resolutionY = depthTexture.height;
+        
+        Vector3[] pointCloudData = new Vector3[resolutionX * resolutionY];
+        ComputeBuffer pointCloudBuffer = new ComputeBuffer(pointCloudData.Length, 3 * sizeof(float));
+#if UNITY_EDITOR
+        ComputeShader computeShader = AssetDatabase.LoadAssetAtPath<ComputeShader>("Assets/Scripts/DepthImage2PointCloud.compute");
+#endif
+        // load compute shader in project folder.
+
+        var cam_info = dataset_params.load_camera_info();
+        
+        int kernel = computeShader.FindKernel("CSMain");
+        computeShader.SetTexture(kernel, "_DepthTexture", depthTexture);
+        computeShader.SetBuffer(kernel, "_PointCloud", pointCloudBuffer);
+        computeShader.SetFloat("_fx", cam_info.fx);
+        computeShader.SetFloat("_fy", cam_info.fx);
+        computeShader.SetFloat("_cx", cam_info.cx);
+        computeShader.SetFloat("_cy", cam_info.cy);
+
+        computeShader.Dispatch(kernel, resolutionX / 8, resolutionY / 8, 1);
+
+        pointCloudBuffer.GetData(pointCloudData);
+
+        pointCloudBuffer.Release();
+
+
+    }
+
 }
 

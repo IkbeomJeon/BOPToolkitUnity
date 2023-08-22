@@ -1,0 +1,31 @@
+#pragma kernel CSMain
+
+// Texture to hold the depth values as red channel.
+Texture2D<float> _DepthTexture;
+RWStructuredBuffer<float3> _PointCloud;
+
+// Intrinsic parameters
+float _fx;
+float _fy;
+float _cx;
+float _cy;
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    uint width, height;
+    _DepthTexture.GetDimensions(width, height);
+
+    // Read depth value and convert to float
+    // Assume that depth texture's red channel contains the depth value in 0-65535 range.
+    float depth = _DepthTexture[id.xy].r * 0.001f; // Modify scaling factor if necessary
+
+    // Calculate 3D position
+    float3 position;
+    position.x = (id.x - _cx) * depth / _fx;
+    position.y = (id.y - _cy) * depth / _fy;
+    position.z = depth;
+
+    // Store in the output buffer
+    _PointCloud[id.y * width + id.x] = position;
+}
