@@ -249,21 +249,73 @@ public class BOPLoaderTest
         pointCloudBuffer.Release();
 
         GameObject pointCloud = new GameObject();
-        Mesh mesh = new Mesh();
-        mesh.vertices = pointCloudData;
-        mesh.SetIndices(System.Linq.Enumerable.Range(0, pointCloudData.Length).ToArray(), MeshTopology.Points, 0);
 
-        var meshfilter = pointCloud.AddComponent<MeshFilter>();
-        meshfilter.sharedMesh = mesh;
+        int vertexCount= pointCloudData.Length;
+        int verticesMax = 128*128;
+        int meshCount = (int)Mathf.Ceil(vertexCount / (float)verticesMax);
 
-        var meshRenderer = pointCloud.AddComponent<MeshRenderer>();
-        meshRenderer.sharedMaterial = new Material(Shader.Find("Custom/PointCloud"));
+        var meshArray = new Mesh[meshCount];
+
+        //int index = 0;
+        int meshIndex = 0;
+        int vertexIndex = 0;
+        int resolution = GetNearestPowerOfTwo(Mathf.Sqrt(vertexCount));
+        while (meshIndex < meshCount)
+        {
+            int meshVertexCount = Mathf.Min(verticesMax, vertexCount - vertexIndex);
+            Vector3[] vertices = new Vector3[meshVertexCount];
+            int[] indices = new int[meshVertexCount];
+            for (int i = 0; i < meshVertexCount; i++)
+            {
+                vertices[i] = pointCloudData[vertexIndex];
+                indices[i] = i;
+                vertexIndex++;
+                //index++;
+            }
+
+            Mesh mesh = new Mesh();
+            mesh.vertices = vertices;
+            mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 100f);
+            mesh.SetIndices(indices, MeshTopology.Points, 0);
+            meshArray[meshIndex] = mesh;
+            var material = new Material(Shader.Find("Custom/PointCloud"));
+            GameObject go = CreateGameObjectWithMesh(mesh, material, meshIndex.ToString(), pointCloud.transform);
+
+            meshIndex++;
+        }
+
+        //    Mesh mesh = new Mesh();
+        //mesh.vertices = pointCloudData;
+        //mesh.SetIndices(System.Linq.Enumerable.Range(0, pointCloudData.Length).ToArray(), MeshTopology.Points, 0);
+        
+
+        //var meshfilter = pointCloud.AddComponent<MeshFilter>();
+        //meshfilter.sharedMesh = mesh;
+
+        //var meshRenderer = pointCloud.AddComponent<MeshRenderer>();
+        //meshRenderer.sharedMaterial = new Material(Shader.Find("Custom/PointCloud"));
         for(int i = 0; i < 100000; i++)
         {
             yield return null;
         }
-
+      
     }
-
+    static GameObject CreateGameObjectWithMesh(Mesh mesh, Material materialToApply, string name = "GeneratedMesh", Transform parent = null)
+    {
+        GameObject meshGameObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        GameObject.DestroyImmediate(meshGameObject.GetComponent<Collider>());
+        meshGameObject.GetComponent<MeshFilter>().mesh = mesh;
+        meshGameObject.GetComponent<Renderer>().sharedMaterial = materialToApply;
+        meshGameObject.name = name;
+        meshGameObject.transform.parent = parent;
+        meshGameObject.transform.localPosition = Vector3.zero;
+        meshGameObject.transform.localRotation = Quaternion.identity;
+        meshGameObject.transform.localScale = Vector3.one;
+        return meshGameObject;
+    }
+    int GetNearestPowerOfTwo(float x)
+    {
+        return (int)Mathf.Pow(2f, Mathf.Ceil(Mathf.Log(x) / Mathf.Log(2f)));
+    }
 }
 
