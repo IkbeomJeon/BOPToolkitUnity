@@ -89,7 +89,7 @@ public class BOPFrame
         //go_models = CreateModels(datasetParams.base_path, datasetParams.model_info);
 
         UpdateScene(im_id, datasetParams);
-        LoadAllCameraPoses(datasetParams.scene_gt[im_id][0].obj_id, datasetParams);
+        //LoadAllCameraPoses(datasetParams.scene_gt[im_id][0].obj_id, datasetParams);
     }
 
     GameObject CreateCamera(CameraInfo cameraInfo, SceneCamera sceneCamera)
@@ -137,7 +137,7 @@ public class BOPFrame
         //var mesh_info = PointCloudGenerator.LoadPointCloud(model_path);
         //var go_model = PointCloudGenerator.ToGameObject(mesh_info, model.Key.ToString(), 0.1f);
         var go_model = PointCloudLoader.LoadPly(model_path);
-        go_model.transform.parent = frame_root.transform;
+        //go_model.transform.parent = frame_root.transform;
         go_model.name = obj_id.ToString();
 
         //go_model.transform.localScale = new Vector3(1, -1, 1);
@@ -225,7 +225,7 @@ public class BOPFrame
 
     // option 1: model-centric, centric-model-id
     // option 2: camera-centric
-    public void UpdateScene(int im_id, BOPDatasetParams datasetParams)
+    public void UpdateScene(int im_id, BOPDatasetParams datasetParams, bool load_point_cloud=false)
     {
         foreach (var model in go_models.Values)
         {
@@ -271,7 +271,13 @@ public class BOPFrame
             rt.m20 = gt.cam_R_m2c[6]; rt.m21 = gt.cam_R_m2c[7]; rt.m22 = gt.cam_R_m2c[8]; rt.m23 = gt.cam_t_m2c[2];
 
             rt = rt * rotx_270;
-            rt = rt.inverse;
+            //rt = rt.inverse;
+
+            go_models[gt.obj_id].transform.localPosition = rt.GetColumn(3) * 0.001f;
+            go_models[gt.obj_id].transform.localRotation = rt.rotation;
+
+            //go_camera.transform.localPosition = rt.GetColumn(3) * 0.001f;
+            //go_camera.transform.localRotation = rt.rotation;
 
             //Matrix4x4 conversionMatrix = rt;
             //conversionMatrix.SetColumn(1, rt.GetColumn(2));
@@ -286,8 +292,7 @@ public class BOPFrame
 
             //rt = inv_z * rt * inv_z;
             //rt = inv_z * rt ;
-            go_camera.transform.localPosition = rt.GetColumn(3) * 0.001f;
-            go_camera.transform.localRotation = rt.rotation;
+
             //ApplyTransform(go_camera, rt, 0.01f);
 
             //rt = go_camera.transform.localToWorldMatrix;
@@ -309,24 +314,28 @@ public class BOPFrame
             go_camera.GetComponent<BlendDuringRender>().SetTransparency(1);
             
             //Load PointCloud
-            if(go_pointCloud != null)
-                GameObject.DestroyImmediate(go_pointCloud);
+            if(load_point_cloud)
+            {
+                if (go_pointCloud != null)
+                    GameObject.DestroyImmediate(go_pointCloud);
 
-            string depth_path = BOPPath.get_depth_path(datasetParams.split_path, datasetParams.scene_id, im_id, datasetParams.depth_ext);
-            var depthTexture = TextureIO.LoadTexture(depth_path);
-            
-            var sceneCamera = datasetParams.scene_camera[im_id];
-            float fx = sceneCamera.cam_K[0];
-            float fy = sceneCamera.cam_K[4];
-            float cx = sceneCamera.cam_K[2];
-            float cy = sceneCamera.cam_K[5];
-            float depth_scale = sceneCamera.depth_scale;
-            PointCloudData pointCloud = PointCloudLoader.LoadFromDepthImage(depthTexture, rgbTexture, fx, fy, cx, cy, depth_scale);
-            go_pointCloud = pointCloud.ToGameObject();
-            go_pointCloud.transform.parent = go_camera.transform;
-            go_pointCloud.transform.localPosition = Vector3.zero;
-            go_pointCloud.transform.localRotation = Quaternion.identity;
-            go_pointCloud.transform.localScale = Vector3.one;
+                string depth_path = BOPPath.get_depth_path(datasetParams.split_path, datasetParams.scene_id, im_id, datasetParams.depth_ext);
+                var depthTexture = TextureIO.LoadTexture(depth_path);
+
+                var sceneCamera = datasetParams.scene_camera[im_id];
+                float fx = sceneCamera.cam_K[0];
+                float fy = sceneCamera.cam_K[4];
+                float cx = sceneCamera.cam_K[2];
+                float cy = sceneCamera.cam_K[5];
+                float depth_scale = sceneCamera.depth_scale;
+                PointCloudData pointCloud = PointCloudLoader.LoadFromDepthImage(depthTexture, rgbTexture, fx, fy, cx, cy, depth_scale);
+                go_pointCloud = pointCloud.ToGameObject();
+                go_pointCloud.transform.parent = go_camera.transform;
+                go_pointCloud.transform.localPosition = Vector3.zero;
+                go_pointCloud.transform.localRotation = Quaternion.identity;
+                go_pointCloud.transform.localScale = Vector3.one;
+            }
+ 
 
         }
     }
