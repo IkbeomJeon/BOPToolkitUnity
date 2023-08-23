@@ -12,6 +12,7 @@ public class BOPDatasetParams
 {
     public string base_path;
     public string split_path;
+    public string dataset_name;
     public int scene_id
     {
         get
@@ -77,6 +78,9 @@ public class BOPDatasetParams
     public CameraInfo load_camera_info()
     {
         string filepath = Path.Combine(base_path, "camera.json");
+        if (dataset_name == "ycbv")
+            filepath = Path.Combine(base_path, "camera_uw.json");
+
         string json = File.ReadAllText(filepath);
 
         CameraInfo cameraData = JsonUtility.FromJson<CameraInfo>(json);

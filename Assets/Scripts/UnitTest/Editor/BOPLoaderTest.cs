@@ -6,13 +6,9 @@ using System.Linq;
 using System.Runtime.InteropServices.ComTypes;
 using NUnit.Framework;
 using NUnit.Framework.Internal;
-using PointCloudExporter;
-using Unity.Plastic.Newtonsoft.Json;
 using UnityEditor;
-using UnityEditor.Graphs;
 using UnityEngine;
 using UnityEngine.TestTools;
-using static Codice.CM.Common.Serialization.PacketFileReader;
 
 public class BOPLoaderTest
 {

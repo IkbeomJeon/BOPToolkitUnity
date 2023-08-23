@@ -393,7 +393,7 @@ public static class PointCloudGenerator
 [System.Serializable]
 public class PointCloudData
 {
-    const int verticesMax = 128 * 128;
+    const int verticesMax = 256 * 256;
     public List<PointCloudSubData> sub_groups = new List<PointCloudSubData>();
 
     Material ptMaterial;
@@ -401,33 +401,58 @@ public class PointCloudData
     public PointCloudData(Vector3[] vertices, int[] triangles, Vector3[] normals, Color[] colors, Vector2[] uv, string texture_filepath)
     {
         //Assert.IsTrue(vertices.Length == normals.Length && normals.Length == colors.Length && colors.Length == uvs.Length);
-
+        List<Vector3[]> sub_vertices;
         List<Vector3[]> sub_normals = null;
         List<Color[]> sub_colors = null;
         List<Vector2[]> sub_uv = null;
-        List<int[]> sub_triangles = null;
 
-        var sub_vertices = vertices.SplitIntoChunks(verticesMax).ToList();
-
-        if (normals != null)
-            sub_normals = normals.SplitIntoChunks(verticesMax).ToList();
-
-        if (colors != null)
-            sub_colors = colors.SplitIntoChunks(verticesMax).ToList();
-
-        if (uv != null)
+        if (vertices.Length > verticesMax)
         {
-            sub_uv = uv.SplitIntoChunks(verticesMax).ToList();
-        }
+            if(triangles != null)
+            {
+                //vertex수가 max보다 많고, face정보까지 있는데 모델을 분할해야 하는 어려운 문제이므로 일단 에러를 던진다.
+                throw new System.Exception("Too many vertices and triangles. Please reduce the number of vertices and triangles.");
+            }
+            
+            sub_vertices = vertices.SplitIntoChunks(verticesMax).ToList();
 
-        if (triangles != null)
-            sub_triangles = triangles.SplitIntoChunks(verticesMax * 6).ToList();
+            if (normals != null)
+                sub_normals = normals.SplitIntoChunks(verticesMax).ToList();
+
+            if (colors != null)
+                sub_colors = colors.SplitIntoChunks(verticesMax).ToList();
+
+            if (uv != null)
+            {
+                sub_uv = uv.SplitIntoChunks(verticesMax).ToList();
+            }
+        }
+        else
+        {
+            sub_vertices = new List<Vector3[]>();
+            sub_vertices.Add(vertices);
+            if (normals != null)
+            {
+                sub_normals = new List<Vector3[]>();
+                sub_normals.Add(normals);
+            }
+            if (colors != null)
+            {
+                sub_colors = new List<Color[]>();
+                sub_colors.Add(colors);
+            }
+            if (uv != null)
+            {
+                sub_uv = new List<Vector2[]>();
+                sub_uv.Add(uv);
+            }
+        }
 
         for (int i = 0; i < sub_vertices.Count; i++)
         {
             PointCloudSubData sub_data = new PointCloudSubData();
             sub_data.vertices = sub_vertices[i];
-            if (sub_normals != null && normals.Length > 0)
+            if (normals != null && normals.Length > 0)
                 sub_data.normals = sub_normals[i];
             if (colors != null && colors.Length > 0)
                 sub_data.colors = sub_colors[i];
@@ -437,7 +462,7 @@ public class PointCloudData
                 sub_data.texture_filepath = texture_filepath;
             }
             if (triangles != null && triangles.Length > 0)
-                sub_data.triangles = sub_triangles[i];
+                sub_data.triangles = triangles;
 
             sub_groups.Add(sub_data);
         }
@@ -492,15 +517,7 @@ public class PointCloudSubData
             mesh.RecalculateNormals();
             material = new Material(Shader.Find("PointCloud/VertexColor"));
         }
-        //texture 정보가 있는 경우
-        else if (uv != null && uv.Length > 0 && texture_filepath != null)
-        {
-            mesh.uv = uv;
-            material = new Material(Shader.Find("Standard"));
-            material.mainTexture = LoadTexture(texture_filepath);
-        }
-        //triangle, texture없고 point만 존재하는 경우.
-        else if (triangles == null)
+        else
         {
             material = new Material(Shader.Find("PointCloud/UnlitParticle"));
             material.SetFloat("_Size", point_size);
@@ -511,8 +528,13 @@ public class PointCloudSubData
 
             mesh.SetIndices(indices, MeshTopology.Points, 0);
         }
-        else
-            throw new Exception("Invalid PointCloud data");
+        //texture 정보가 있는 경우
+        if (uv != null && uv.Length > 0 && texture_filepath != null)
+        {
+            mesh.uv = uv;
+            material = new Material(Shader.Find("Standard"));
+            material.mainTexture = LoadTexture(texture_filepath);
+        }
 
         if (normals != null && normals.Length > 0)
             mesh.normals = normals;

@@ -1,9 +1,4 @@
-﻿using log4net.Util;
-using NUnit.Framework.Internal;
-using PointCloudExporter;
-using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System;
 using System.IO;
 using UnityEngine;
 

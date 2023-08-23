@@ -6,6 +6,7 @@ using UnityEditor.Graphs;
 using UnityEngine;
 using System.IO;
 using System;
+using System.Linq;
 
 public class MainWindow : EditorWindow
 {
@@ -40,9 +41,8 @@ public class MainWindow : EditorWindow
             {
                 datasetParams = new BOPDatasetParams(scene_path);
                 EditorGUILayout.LabelField("Scene path: " + scene_path, EditorStyles.boldLabel);
-
-                curr_frame_id = 0;
                 datasetParams.load_scene();
+                int curr_frame_id = datasetParams.scene_camera.Keys.First();
                 bop_frame.CreateFrame(curr_frame_id, datasetParams);
                 Repaint();
             }

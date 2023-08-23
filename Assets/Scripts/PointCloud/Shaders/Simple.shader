@@ -1,4 +1,4 @@
-﻿Shader "Unlit/Simple"
+﻿Shader "PointCloud/Simple"
 {
 	Properties
 	{
