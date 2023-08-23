@@ -3,14 +3,13 @@ using System;
 using System.Linq;
 using UnityEngine;
 using System.Collections.Generic;
-using static PointCloudGenerator;
-using UnityEngine.Assertions;
-using static TMPro.SpriteAssetUtilities.TexturePacker_JsonArray;
+using UnityEditor;
+using System.Dynamic;
 
-public static class PointCloudGenerator
+public static class PointCloudLoader
 {
-    const int verticesMax = 256 * 256;
-
+    
+    static string compute_shader_path = "Assets/Scripts/PointCloud/Shaders/DepthImage2PointCloud.compute";
     enum DataType { __Float, __Double };
 
     static public GameObject LoadPly(string filePath)
@@ -86,31 +85,48 @@ public static class PointCloudGenerator
 
         PointCloudData pointCloudData = new PointCloudData(vertices.ToArray(), triangles.ToArray(), null, colors.ToArray(), uv.ToArray(), texturePath);
         return pointCloudData.ToGameObject();
+    }
 
-        //// Set the mesh data
-        //mesh.vertices = vertices.ToArray();
-        //mesh.triangles = triangles.ToArray();
-        //mesh.colors = colors.ToArray();
-        //mesh.uv = uv.ToArray();
-        //mesh.RecalculateNormals();
+    static public PointCloudData LoadFromDepthImage(Texture2D depth_texture, float fx, float fy, float cx, float cy, float depth_scale=1.0f)
+    { 
+        var pointcloud_vertices = ConvertToPoint(depth_texture, fx, fy, cx, cy, depth_scale);
+        return new PointCloudData(pointcloud_vertices, null, null, null, null, null);
+    }
+    static public PointCloudData LoadFromDepthImage(Texture2D depth_texture, Texture2D color_texture, float fx, float fy, float cx, float cy, float depth_scale=1.0f)
+    {
+        var pointcloud_vertices = ConvertToPoint(depth_texture, fx, fy, cx, cy, depth_scale);
+        Color[] pointcloud_colors = color_texture.GetPixels();
 
-        //// Create a new GameObject and add the mesh
-        //GameObject obj = new GameObject();
-        //obj.AddComponent<MeshFilter>().mesh = mesh;
+        return new PointCloudData(pointcloud_vertices, null, null, pointcloud_colors, null, null);
+    }
 
-        //if (textureFileName != "")
-        //{
-        //    Material new_mat = new Material(Shader.Find("Standard"));
-        //    string texturePath = Path.Combine(Path.GetDirectoryName(filePath), textureFileName);
-        //    new_mat.mainTexture = LoadTexture(texturePath);
-        //    obj.AddComponent<MeshRenderer>().sharedMaterial = new_mat;
+    static Vector3[] ConvertToPoint(Texture2D depth_texture, float fx, float fy, float cx, float cy, float depth_scale)
+    {
+        int resolutionX = depth_texture.width;
+        int resolutionY = depth_texture.height;
 
-        //}
+        Vector3[] pointcloud_vertices = new Vector3[resolutionX * resolutionY];
 
-        //else
-        //    obj.AddComponent<MeshRenderer>().sharedMaterial = new Material(Shader.Find("Custom/VertexColor"));
+        ComputeBuffer pointCloudBuffer = new ComputeBuffer(pointcloud_vertices.Length, 3 * sizeof(float));
+#if UNITY_EDITOR
+        ComputeShader computeShader = AssetDatabase.LoadAssetAtPath<ComputeShader>(compute_shader_path);
 
-        //return obj;
+        int kernel = computeShader.FindKernel("CSMain");
+        computeShader.SetTexture(kernel, "_DepthTexture", depth_texture);
+        computeShader.SetBuffer(kernel, "_PointCloud", pointCloudBuffer);
+        computeShader.SetFloat("_fx", fx);
+        computeShader.SetFloat("_fy", fx);
+        computeShader.SetFloat("_cx", cx);
+        computeShader.SetFloat("_cy", cy);
+        computeShader.SetFloat("_cy", cy);
+        computeShader.SetFloat("_depthScale", depth_scale * 0.001f);
+
+        computeShader.Dispatch(kernel, resolutionX / 8, resolutionY / 8, 1);
+        pointCloudBuffer.GetData(pointcloud_vertices);
+        pointCloudBuffer.Release();
+
+        return pointcloud_vertices;
+#endif
     }
 
     public static PointCloudSubData LoadPointCloud(string filePath, int maximumVertex = 6000000, float fScale = 1.0f)
@@ -274,129 +290,15 @@ public static class PointCloudGenerator
         }
         return data;
     }
-
-    static private Texture2D LoadTexture(string texturePath)
-    {
-        Texture2D texture = new Texture2D(1, 1);
-        if (File.Exists(texturePath))
-        {
-            byte[] textureData = File.ReadAllBytes(texturePath);
-            texture.LoadImage(textureData);
-        }
-        else
-        {
-            throw new Exception("Texture file not found: " + texturePath);
-        }
-        return texture;
-    }
-
-    public static GameObject ToGameObject(this PointCloudSubData meshInfo, string name, float point_size)
-    {
-        GameObject pointCloudObj = new GameObject(name);
-        Material ptMaterial = new Material(Shader.Find("Unlit/PointCloud"));
-        ptMaterial.SetFloat("_Size", point_size);
-
-        Texture2D sprite = (Texture2D)Resources.Load("Textures/Circle");
-        //ptMaterial.mainTexture = sprite as Texture;
-        ptMaterial.SetTexture("_MainTex", sprite);
-
-        Generate(meshInfo, ptMaterial, MeshTopology.Points, pointCloudObj);
-
-        return pointCloudObj;
-    }
-
-    private static void Generate(PointCloudSubData meshInfos, Material materialToApply, MeshTopology topology, GameObject parentObj)
-    {
-        int vertexCount = meshInfos.vertices.Length;
-        int meshCount = (int)Mathf.Ceil(vertexCount / (float)verticesMax);
-        int index = 0;
-        int meshIndex = 0;
-        int vertexIndex = 0;
-
-        int resolution = GetNearestPowerOfTwo(Mathf.Sqrt(vertexCount));
-
-        while (meshIndex < meshCount)
-        {
-
-            int count = verticesMax;
-            if (vertexCount <= verticesMax)
-            {
-                count = vertexCount;
-            }
-            else if (vertexCount > verticesMax && meshCount == meshIndex + 1)
-            {
-                count = vertexCount % verticesMax;
-            }
-
-            Vector3[] subVertices = meshInfos.vertices.Skip(meshIndex * verticesMax).Take(count).ToArray();
-            Vector3[] subNormals = meshInfos.normals.Skip(meshIndex * verticesMax).Take(count).ToArray();
-            Color[] subColors = meshInfos.colors.Skip(meshIndex * verticesMax).Take(count).ToArray();
-            int[] subIndices = new int[count];
-            for (int i = 0; i < count; ++i)
-            {
-                subIndices[i] = i;
-            }
-
-            Mesh mesh = new Mesh();
-            mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 100f);
-            mesh.vertices = subVertices;
-            mesh.normals = subNormals;
-            mesh.colors = subColors;
-            mesh.SetIndices(subIndices, topology, 0);
-
-            Vector2[] uvs2 = new Vector2[mesh.vertices.Length];
-            for (int i = 0; i < uvs2.Length; ++i)
-            {
-                float x = vertexIndex % resolution;
-                float y = Mathf.Floor(vertexIndex / (float)resolution);
-                uvs2[i] = new Vector2(x, y) / (float)resolution;
-                ++vertexIndex;
-            }
-            mesh.uv2 = uvs2;
-
-            GameObject go = CreateGameObjectWithMesh(mesh, materialToApply, parentObj.name + "_" + meshIndex, parentObj.transform);
-
-            go.transform.parent = parentObj.transform;
-
-            index += count;
-            ++meshIndex;
-        }
-    }
-
-
-
-    private static GameObject CreateGameObjectWithMesh(Mesh mesh, Material materialToApply, string name = "GeneratedMesh", Transform parent = null)
-    {
-        GameObject meshGameObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        GameObject.DestroyImmediate(meshGameObject.GetComponent<Collider>());
-        meshGameObject.GetComponent<MeshFilter>().mesh = mesh;
-        meshGameObject.GetComponent<Renderer>().sharedMaterial = materialToApply;
-        meshGameObject.name = name;
-        meshGameObject.transform.parent = parent;
-        meshGameObject.transform.localPosition = Vector3.zero;
-        meshGameObject.transform.localRotation = Quaternion.identity;
-        meshGameObject.transform.localScale = Vector3.one;
-        return meshGameObject;
-    }
-    /// <summary>
-    /// refer. : http://stackoverflow.com/questions/466204/rounding-up-to-nearest-power-of-2
-    /// </summary>
-    /// <param name="x"></param>
-    /// <returns></returns>
-    /// 
-    static int GetNearestPowerOfTwo(float x)
-    {
-        return (int)Mathf.Pow(2f, Mathf.Ceil(Mathf.Log(x) / Mathf.Log(2f)));
-    }
 }
 
 [System.Serializable]
 public class PointCloudData
 {
     const int verticesMax = 256 * 256;
-    public List<PointCloudSubData> sub_groups = new List<PointCloudSubData>();
 
-    Material ptMaterial;
+    [SerializeField]
+    public List<PointCloudSubData> sub_groups = new List<PointCloudSubData>();
 
     public PointCloudData(Vector3[] vertices, int[] triangles, Vector3[] normals, Color[] colors, Vector2[] uv, string texture_filepath)
     {
@@ -489,6 +391,8 @@ public class PointCloudData
 
     }
 }
+
+[System.Serializable]
 public class PointCloudSubData
 {
     public Vector3[] vertices;

@@ -9,7 +9,7 @@ float _fx;
 float _fy;
 float _cx;
 float _cy;
-
+float _depthScale;
 [numthreads(8, 8, 1)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
@@ -18,7 +18,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 
     // Read depth value and convert to float
     // Assume that depth texture's red channel contains the depth value in 0-65535 range.
-    float depth = _DepthTexture[id.xy].r * 0.001f; // Modify scaling factor if necessary
+    float depth = _DepthTexture[id.xy].r * _depthScale; // Modify scaling factor if necessary
 
     // Calculate 3D position
     float3 position;
@@ -30,8 +30,4 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     // Store in the output buffer
     _PointCloud[id.y * width + id.x] = position;
 }
-uint2 UnpackUShort2(uint packedValue)
-{
-// The indices are ushorts, which aren't available as a type in compute. Separate them here.
-    return uint2(packedValue & 0xFFFF, packedValue >> 16);
-}
+

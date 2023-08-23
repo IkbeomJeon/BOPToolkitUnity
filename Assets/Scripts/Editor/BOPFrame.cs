@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Dynamic;
 using System.IO;
 using UnityEngine;
 
@@ -71,6 +72,9 @@ public class BOPFrame
     public GameObject go_camera;
 
     [SerializeField]
+    public GameObject go_pointCloud;
+
+    [SerializeField]
     public SerializableDictionary<int, GameObject> go_models = new SerializableDictionary<int, GameObject>();
 
     [SerializeField]
@@ -132,7 +136,7 @@ public class BOPFrame
         string model_path = BOPPath.get_model_path(base_path, obj_id);
         //var mesh_info = PointCloudGenerator.LoadPointCloud(model_path);
         //var go_model = PointCloudGenerator.ToGameObject(mesh_info, model.Key.ToString(), 0.1f);
-        var go_model = PointCloudGenerator.LoadPly(model_path);
+        var go_model = PointCloudLoader.LoadPly(model_path);
         go_model.transform.parent = frame_root.transform;
         go_model.name = obj_id.ToString();
 
@@ -298,24 +302,37 @@ public class BOPFrame
             //go_camera.transform.position = newMat.GetColumn(3);
             //go_camera.transform.rotation = newMat.rotation;
 
-
+            //Render RGB Image
             string rgb_path = BOPPath.get_rgb_path(datasetParams.split_path, datasetParams.scene_id, im_id, datasetParams.rgb_ext);
-            byte[] imageData = File.ReadAllBytes(rgb_path);
-
-            // Create a new Texture2D and load the image data
-            Texture2D texture = new Texture2D(2, 2);
-            texture.LoadImage(imageData);
-            
-            texture.Apply();
-            //go_camera.transform.localScale = new Vector3(-1, 1, 1);
-            go_camera.GetComponent<BlendDuringRender>().SetBlendedTexture(texture);
+            var rgbTexture = TextureIO.LoadTexture(rgb_path);
+            go_camera.GetComponent<BlendDuringRender>().SetBlendedTexture(rgbTexture);
             go_camera.GetComponent<BlendDuringRender>().SetTransparency(1);
+            
+            //Load PointCloud
+            if(go_pointCloud != null)
+                GameObject.DestroyImmediate(go_pointCloud);
+
+            string depth_path = BOPPath.get_depth_path(datasetParams.split_path, datasetParams.scene_id, im_id, datasetParams.depth_ext);
+            var depthTexture = TextureIO.LoadTexture(depth_path);
+            
+            var sceneCamera = datasetParams.scene_camera[im_id];
+            float fx = sceneCamera.cam_K[0];
+            float fy = sceneCamera.cam_K[4];
+            float cx = sceneCamera.cam_K[2];
+            float cy = sceneCamera.cam_K[5];
+
+            PointCloudData pointCloud = PointCloudLoader.LoadFromDepthImage(depthTexture, rgbTexture, fx, fy, cx, cy);
+            go_pointCloud = pointCloud.ToGameObject();
+            go_pointCloud.transform.parent = go_camera.transform;
+            go_pointCloud.transform.localPosition = Vector3.zero;
+            go_pointCloud.transform.localRotation = Quaternion.identity;
+            go_pointCloud.transform.localScale = Vector3.one;
 
         }
     }
 
 
-    
+
     // set transfrom of go_camera using rt
 
     //model.transform.position = gt.cam_t;
