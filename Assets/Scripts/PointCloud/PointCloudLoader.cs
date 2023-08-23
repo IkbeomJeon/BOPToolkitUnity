@@ -87,12 +87,12 @@ public static class PointCloudLoader
         return pointCloudData.ToGameObject();
     }
 
-    static public PointCloudData LoadFromDepthImage(Texture2D depth_texture, float fx, float fy, float cx, float cy, float depth_scale=1.0f)
+    static public PointCloudData LoadFromDepthImage(Texture2D depth_texture, float fx, float fy, float cx, float cy, float depth_scale)
     { 
         var pointcloud_vertices = ConvertToPoint(depth_texture, fx, fy, cx, cy, depth_scale);
         return new PointCloudData(pointcloud_vertices, null, null, null, null, null);
     }
-    static public PointCloudData LoadFromDepthImage(Texture2D depth_texture, Texture2D color_texture, float fx, float fy, float cx, float cy, float depth_scale=1.0f)
+    static public PointCloudData LoadFromDepthImage(Texture2D depth_texture, Texture2D color_texture, float fx, float fy, float cx, float cy, float depth_scale)
     {
         var pointcloud_vertices = ConvertToPoint(depth_texture, fx, fy, cx, cy, depth_scale);
         Color[] pointcloud_colors = color_texture.GetPixels();

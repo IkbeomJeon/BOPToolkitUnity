@@ -176,8 +176,8 @@ public class BOPLoaderTest
         var depthTexture = TextureIO.LoadTexture(depth_path);
         var rgbTexture = TextureIO.LoadTexture(rgb_path);
         var cam_info = dataset_params.load_camera_info();
-
-        PointCloudData pointCloud = PointCloudLoader.LoadFromDepthImage(depthTexture, rgbTexture, cam_info.fx, cam_info.fy, cam_info.cx, cam_info.cy);
+        
+        PointCloudData pointCloud = PointCloudLoader.LoadFromDepthImage(depthTexture, rgbTexture, cam_info.fx, cam_info.fy, cam_info.cx, cam_info.cy, cam_info.depth_scale);
         Debug.LogFormat("{0}, {1}, {2}", pointCloud.sub_groups.Count, pointCloud.sub_groups[0].vertices.Length, pointCloud.sub_groups[0].colors.Length);
         pointCloud.ToGameObject();
 

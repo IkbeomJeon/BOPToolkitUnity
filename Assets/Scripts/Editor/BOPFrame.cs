@@ -320,8 +320,8 @@ public class BOPFrame
             float fy = sceneCamera.cam_K[4];
             float cx = sceneCamera.cam_K[2];
             float cy = sceneCamera.cam_K[5];
-
-            PointCloudData pointCloud = PointCloudLoader.LoadFromDepthImage(depthTexture, rgbTexture, fx, fy, cx, cy);
+            float depth_scale = sceneCamera.depth_scale;
+            PointCloudData pointCloud = PointCloudLoader.LoadFromDepthImage(depthTexture, rgbTexture, fx, fy, cx, cy, depth_scale);
             go_pointCloud = pointCloud.ToGameObject();
             go_pointCloud.transform.parent = go_camera.transform;
             go_pointCloud.transform.localPosition = Vector3.zero;

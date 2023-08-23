@@ -29,7 +29,7 @@ public class TextureIOTest
         var texutre = TextureIO.LoadTexture(filepath);
         Assert.AreEqual(texutre.width, 640);
         Assert.AreEqual(texutre.height, 480);
-        Assert.AreEqual(texutre.format, TextureFormat.R16);
+        Assert.AreEqual(texutre.format, TextureFormat.RFloat);
         //TextureIO.WriteTexture(texutre, "result_depth.png");
 
         ////print file size from filepath

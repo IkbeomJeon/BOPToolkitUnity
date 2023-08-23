@@ -171,13 +171,14 @@ public static class TextureIO
                     output_texture.SetPixel(x, y, new Color(d, 0, 0, 1.0f));
                 }
             }
-
+            
+            // 아래와 같이 R16으로 변환 시, computeshader에 ushort texture를 넘기지 못하는 문제가 있음.
             //textureFormat = TextureFormat.R16;
             //output_texture = new Texture2D(imgWidth, imgHeight, textureFormat, false, false);
             //Cv2.Flip(sourceMat, sourceMat, FlipMode.X);
             //output_texture.LoadRawTextureData(sourceMat.Data, (int)(totalBytes));
 
-            ////For Test
+            ////아래의 코드는 output texture를 확인하기위한 코드
             //output_texture.Apply();
 
             //var vis_texture = new Texture2D(imgWidth, imgHeight, TextureFormat.RFloat, false, false);

@@ -12,7 +12,11 @@ public class BOPDatasetParams
 {
     public string base_path;
     public string split_path;
+    
     public string dataset_name;
+    public string dataset_split;
+    public string dataset_split_type;
+
     public int scene_id
     {
         get
@@ -20,13 +24,12 @@ public class BOPDatasetParams
             return int.Parse(loaded_scene_name);
         }
     }
-
-
     string loaded_scene_name;
-    public string rgb_ext = "png";
-    public string gray_ext = "png";
-    public string depth_ext = "png";
+    public string rgb_ext;
+    public string gray_ext;
+    public string depth_ext;
 
+    public string camera_filename;
 
     [SerializeField]
     public CameraInfo camera_info = new CameraInfo();
@@ -40,23 +43,69 @@ public class BOPDatasetParams
     public SerializableDictionary<int, SerializableList<SceneGTInfo>> scene_gt_info = new SerializableDictionary<int, SerializableList<SceneGTInfo>>() ;
 
 
-    public BOPDatasetParams(string dataset_path, string dataset_name, string dataset_split)
+
+    public BOPDatasetParams(string dataset_path, string dataset_name, string dataset_split, string dataset_split_type="")
     {
-  
         base_path = Path.Combine(dataset_path, dataset_name);
         split_path = Path.Combine(base_path, dataset_split);
-        
+        this.dataset_name = dataset_name;
+        this.dataset_split = dataset_split;
+        this.dataset_split_type = dataset_split_type;
+
         if (!Directory.Exists(split_path))
             throw new DirectoryNotFoundException("The path not found: " + split_path);
+
+        Init();
     }
     public BOPDatasetParams(string scene_path)
     {
+        // scene_path = /BOP/Dataset/lm/test/000000
         loaded_scene_name = Path.GetFileNameWithoutExtension(scene_path);
-        split_path = Directory.GetParent(scene_path).FullName;
-        base_path = Directory.GetParent(split_path).FullName;
         
+        var dict_info = Directory.GetParent(scene_path);
+        //dict_info = /BOP/Dataset/lm/test
+
+        var splits = dict_info.Name.Split('_');
+
+        if(splits.Length == 1)
+        {
+            dataset_split = splits[0];
+            dataset_split_type = "";
+        }
+        else if(splits.Length == 2)
+        {
+            dataset_split = splits[0];
+            dataset_split_type = splits[1];
+        }
+
+        split_path = dict_info.FullName;
+        dict_info = Directory.GetParent(dict_info.FullName);
+        //dict_info = /BOP/Dataset/lm
+        dataset_name = dict_info.Name;
+        base_path = dict_info.FullName;
+
         if (!Directory.Exists(split_path))
             throw new DirectoryNotFoundException("The path not found: " + split_path);
+        
+        Init();
+    }
+    void Init()
+    {
+        rgb_ext = "png";
+        gray_ext = "png";
+        depth_ext = "png";
+        camera_filename = "camera.json";
+        
+        if (dataset_name == "lm" )
+        {
+            if(dataset_split == "train" && dataset_split_type == "pbr")
+                rgb_ext = "jpg";
+        }
+        
+        if (dataset_name == "ycbv")
+        {
+            camera_filename = "camera_uw.json";
+        }
     }
     public void load_scene()
     {
@@ -77,9 +126,9 @@ public class BOPDatasetParams
     }
     public CameraInfo load_camera_info()
     {
-        string filepath = Path.Combine(base_path, "camera.json");
-        if (dataset_name == "ycbv")
-            filepath = Path.Combine(base_path, "camera_uw.json");
+        string filepath = Path.Combine(base_path, camera_filename);
+        
+            filepath = Path.Combine(base_path, camera_filename);
 
         string json = File.ReadAllText(filepath);
 
