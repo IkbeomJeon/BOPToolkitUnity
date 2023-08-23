@@ -6,7 +6,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
-using static TMPro.SpriteAssetUtilities.TexturePacker_JsonArray;
 
 static class CoordinateUtil
 {
@@ -68,9 +67,6 @@ static class CoordinateUtil
 }
 
 [Serializable]
-public class DictIntGameObject : SerializableDictionary<int, GameObject> { }
-
-[Serializable]
 public class BOPFrame
 {
     [SerializeField]
@@ -80,12 +76,11 @@ public class BOPFrame
     public GameObject go_camera;
 
     [SerializeField]
-    public DictIntGameObject go_models = new DictIntGameObject();
+    public SerializableDictionary<int, GameObject> go_models = new SerializableDictionary<int, GameObject>();
 
     [SerializeField]
     public GameObject go_poses;
     
-
     public void CreateFrame(int im_id, BOPDatasetParams datasetParams)
     {
         frame_root = new GameObject("Frame");
@@ -136,7 +131,7 @@ public class BOPFrame
     }
     void LoadModel(string base_path, int obj_id, SerializableDictionary<int, ModelInfo> model_info)
     {
-        //var output  = new DictIntGameObject<int, GameObject>();
+        //var output  = new SerializableDictionary<int, GameObject><int, GameObject>();
 
         //var go_model = new GameObject(model.Key.ToString());
         string model_path = BOPPath.get_model_path(base_path, obj_id);
@@ -342,7 +337,7 @@ public class BOPFrame
         GameObject.DestroyImmediate(frame_root);
         GameObject.DestroyImmediate(go_poses);
     }
-    //GameObject CreteteObjects(GameObject frame, SceneGT sceneGT, DictIntGameObject<int, ModelInfo> modelInfo)
+    //GameObject CreteteObjects(GameObject frame, SceneGT sceneGT, SerializableDictionary<int, GameObject><int, ModelInfo> modelInfo)
     //{
     //    GameObject objects = new GameObject("Objects");
     //    objects.transform.parent = frame.transform;

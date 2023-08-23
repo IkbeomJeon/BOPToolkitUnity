@@ -17,7 +17,9 @@ public class CameraInfo
 [System.Serializable]
 public class SymmetryData
 {
+    [SerializeField]
     public List<float> axis = new List<float>();
+    [SerializeField]
     public List<float> offset = new List<float>();
 }
 
@@ -31,20 +33,28 @@ public class ModelInfo
     public float size_x;
     public float size_y;
     public float size_z;
+
+    [SerializeField]
     public List<SymmetryData> symmetries_continuous = new List<SymmetryData>();
+    [SerializeField]
     public List<List<float>> symmetries_discrete = new List<List<float>>();
 }
+
 [System.Serializable]
 public class SceneCamera
 {
+    [SerializeField]
     public List<float> cam_K;
     public float depth_scale;
 }
+
 [Serializable]
 public class SceneGT
 {
-    public List<float> cam_R_m2c;
-    public List<float> cam_t_m2c;
+    [SerializeField]
+    public List<float> cam_R_m2c = new List<float>();
+    [SerializeField]
+    public List<float> cam_t_m2c = new List<float>();
     public int obj_id;
 }
 
@@ -52,7 +62,9 @@ public class SceneGT
 [Serializable]
 public class SceneGTInfo
 {
+    [SerializeField]
     public List<int> bbox_obj;
+    [SerializeField]
     public List<int> bbox_visib;
     public int px_count_all;
     public int px_count_valid;

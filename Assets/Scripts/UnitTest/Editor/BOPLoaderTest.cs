@@ -16,6 +16,11 @@ using static Codice.CM.Common.Serialization.PacketFileReader;
 
 public class BOPLoaderTest
 {
+    [SerializeField]
+    SerializableDictionary<int, List<float>> test1 = new SerializableDictionary<int, List<float>>();
+    [SerializeField]
+    SerializableDictionary<int, float> test2 = new SerializableDictionary<int, float>();
+
     string dataset_path = "Assets/Dataset";
 
     [SetUp]

@@ -13,10 +13,12 @@ public class MainWindow : EditorWindow
 
     Vector2 scrollPos = Vector2.zero;
     public bool isPlaying = false;
-    [SerializeField] BOPDatasetParams datasetParams;
+    [SerializeField] 
+    public BOPDatasetParams datasetParams;
 
     int curr_frame_id;
-    BOPFrame bop_frame = new BOPFrame();
+    [SerializeField]
+    public BOPFrame bop_frame = new BOPFrame();
 
     private void OnGUI()
     {
@@ -42,6 +44,7 @@ public class MainWindow : EditorWindow
                 curr_frame_id = 0;
                 datasetParams.load_scene();
                 bop_frame.CreateFrame(curr_frame_id, datasetParams);
+                Repaint();
             }
             catch (Exception e)
             {
@@ -90,10 +93,10 @@ public class MainWindow : EditorWindow
     {
         if (datasetParams == null)
             return;
-        
+
         int total_frame = datasetParams.scene_camera.Count;
         EditorGUILayout.LabelField("Total frames", datasetParams.scene_camera.Count.ToString());
-        var new_frame_id = EditorGUILayout.IntSlider(curr_frame_id, 0, total_frame);
+        var new_frame_id = EditorGUILayout.IntSlider(curr_frame_id, 0, total_frame-1);
 
         if (new_frame_id != curr_frame_id)
         {

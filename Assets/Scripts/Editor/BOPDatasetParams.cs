@@ -1,9 +1,21 @@
+using NUnit.Framework.Constraints;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Unity.Plastic.Newtonsoft.Json;
 using UnityEngine;
+//[SerializeField]
+//public class SerializableDictionary<int, ModelInfo> : SerializableDictionary<int, ModelInfo> { }
+//[SerializeField]
+//public class SerializableDictionary<int, SceneCamera> : SerializableDictionary<int, SceneCamera> { }
+//[SerializeField]
+//public class SerializableDictionary<int, List<SceneGT>> : SerializableDictionary<int, List<SceneGT>> { }
+//[SerializeField]
+//public class SerializableDictionary<int, List<SceneGTInfo>> : SerializableDictionary<int, List<SceneGTInfo>> { }
+
+//[SerializeField]
+//public class DictTest<int, List<float>> : SerializableDictionary<int, List<float>> { }
 
 [Serializable]
 public class BOPDatasetParams
@@ -17,24 +29,29 @@ public class BOPDatasetParams
             return int.Parse(loaded_scene_name);
         }
     }
+
+
     string loaded_scene_name;
     public string rgb_ext = "png";
     public string gray_ext = "png";
     public string depth_ext = "png";
 
+
     [SerializeField]
-    public CameraInfo camera_info;
+    public CameraInfo camera_info = new CameraInfo();
     [SerializeField] 
-    public SerializableDictionary<int, ModelInfo> model_info;
+    public SerializableDictionary<int, ModelInfo> model_info = new SerializableDictionary<int, ModelInfo>();
     [SerializeField] 
-    public SerializableDictionary<int, SceneCamera> scene_camera;
+    public SerializableDictionary<int, SceneCamera> scene_camera = new SerializableDictionary<int, SceneCamera>();
     [SerializeField] 
-    public SerializableDictionary<int, List<SceneGT>> scene_gt;
+    public SerializableDictionary<int, SerializableList<SceneGT>> scene_gt = new SerializableDictionary<int, SerializableList<SceneGT>>();
     [SerializeField] 
-    public SerializableDictionary<int, List<SceneGTInfo>> scene_gt_info;
+    public SerializableDictionary<int, SerializableList<SceneGTInfo>> scene_gt_info = new SerializableDictionary<int, SerializableList<SceneGTInfo>>() ;
+
 
     public BOPDatasetParams(string dataset_path, string dataset_name, string dataset_split)
     {
+  
         base_path = Path.Combine(dataset_path, dataset_name);
         split_path = Path.Combine(base_path, dataset_split);
         
@@ -101,7 +118,7 @@ public class BOPDatasetParams
         var dataDict = JsonConvert.DeserializeObject<SerializableDictionary<int, SceneCamera>>(json);
         return dataDict;
     }
-    public SerializableDictionary<int, List<SceneGT>> load_scene_gt(string scene_name=null)
+    public SerializableDictionary<int, SerializableList<SceneGT>> load_scene_gt(string scene_name=null)
     {
         if (scene_name == null)
             scene_name = loaded_scene_name;
@@ -109,10 +126,10 @@ public class BOPDatasetParams
         string filepath = Path.Combine(split_path, scene_name, "scene_gt.json");
         string json = File.ReadAllText(filepath);
 
-        var dataDict = JsonConvert.DeserializeObject<SerializableDictionary<int, List<SceneGT>>>(json);
+        var dataDict = JsonConvert.DeserializeObject<SerializableDictionary<int, SerializableList<SceneGT>>>(json);
         return dataDict;
     }
-    public SerializableDictionary<int, List<SceneGTInfo>> load_scene_gt_info(string scene_name=null)
+    public SerializableDictionary<int, SerializableList<SceneGTInfo>> load_scene_gt_info(string scene_name=null)
     {
         if (scene_name == null)
             scene_name = loaded_scene_name;
@@ -120,11 +137,12 @@ public class BOPDatasetParams
         string filepath = Path.Combine(split_path, scene_name, "scene_gt_info.json");
         string json = File.ReadAllText(filepath);
 
-        var dataDict = JsonConvert.DeserializeObject<SerializableDictionary<int, List<SceneGTInfo>>>(json);
+        var dataDict = JsonConvert.DeserializeObject<SerializableDictionary<int, SerializableList<SceneGTInfo>>>(json);
         return dataDict;
     }
 
 }
+
 public static class BOPPath
 {
     public static string get_scene_path(string split_path, int scene_id)
