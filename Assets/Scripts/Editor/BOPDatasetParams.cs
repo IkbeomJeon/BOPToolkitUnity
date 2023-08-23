@@ -5,17 +5,7 @@ using System.IO;
 using System.Linq;
 using Unity.Plastic.Newtonsoft.Json;
 using UnityEngine;
-//[SerializeField]
-//public class SerializableDictionary<int, ModelInfo> : SerializableDictionary<int, ModelInfo> { }
-//[SerializeField]
-//public class SerializableDictionary<int, SceneCamera> : SerializableDictionary<int, SceneCamera> { }
-//[SerializeField]
-//public class SerializableDictionary<int, List<SceneGT>> : SerializableDictionary<int, List<SceneGT>> { }
-//[SerializeField]
-//public class SerializableDictionary<int, List<SceneGTInfo>> : SerializableDictionary<int, List<SceneGTInfo>> { }
 
-//[SerializeField]
-//public class DictTest<int, List<float>> : SerializableDictionary<int, List<float>> { }
 
 [Serializable]
 public class BOPDatasetParams

@@ -226,9 +226,9 @@ public class BOPLoaderTest
         int resolutionX = depthTexture.width;
         int resolutionY = depthTexture.height;
         
-        Vector3[] pointCloudData = new Vector3[resolutionX * resolutionY];
+        Vector3[] pointcloud_vertices = new Vector3[resolutionX * resolutionY];
         Color[] colorData = rgbTxeture.GetPixels();
-        ComputeBuffer pointCloudBuffer = new ComputeBuffer(pointCloudData.Length, 3 * sizeof(float));
+        ComputeBuffer pointCloudBuffer = new ComputeBuffer(pointcloud_vertices.Length, 3 * sizeof(float));
 #if UNITY_EDITOR
         ComputeShader computeShader = AssetDatabase.LoadAssetAtPath<ComputeShader>("Assets/Scripts/DepthImage2PointCloud.compute");
 #endif
@@ -246,17 +246,18 @@ public class BOPLoaderTest
 
         computeShader.Dispatch(kernel, resolutionX / 8, resolutionY / 8, 1);
 
-        pointCloudBuffer.GetData(pointCloudData);
+        pointCloudBuffer.GetData(pointcloud_vertices);
 
         pointCloudBuffer.Release();
 
+        //PointCloudData pointCloud = new PointCloudData(pointcloud_vertices, colorData, resolutionX, resolutionY);
+
+
         GameObject pointCloud = new GameObject();
 
-        int vertexCount= pointCloudData.Length;
+        int vertexCount= pointcloud_vertices.Length;
         int verticesMax = 128*128;
         int meshCount = (int)Mathf.Ceil(vertexCount / (float)verticesMax);
-
-        var meshArray = new Mesh[meshCount];
 
         int meshIndex = 0;
         int vertexIndex = 0;
@@ -270,7 +271,7 @@ public class BOPLoaderTest
             for (int i = 0; i < meshVertexCount; i++)
             {
                 color[i] = colorData[vertexIndex];
-                vertices[i] = pointCloudData[vertexIndex];
+                vertices[i] = pointcloud_vertices[vertexIndex];
                 indices[i] = i;
                 vertexIndex++;
             }
@@ -280,14 +281,13 @@ public class BOPLoaderTest
             mesh.colors = color;
             mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 100f);
             mesh.SetIndices(indices, MeshTopology.Points, 0);
-            meshArray[meshIndex] = mesh;
             var material = new Material(Shader.Find("Unlit/PointCloud"));
             material.SetFloat("_Size", 0.001f);
             GameObject go = CreateGameObjectWithMesh(mesh, material, meshIndex.ToString(), pointCloud.transform);
 
             meshIndex++;
         }
-        for(int i = 0; i < 100000; i++)
+        for(int i = 0; i < 10000; i++)
         {
             yield return null;
         }
@@ -309,6 +309,62 @@ public class BOPLoaderTest
     int GetNearestPowerOfTwo(float x)
     {
         return (int)Mathf.Pow(2f, Mathf.Ceil(Mathf.Log(x) / Mathf.Log(2f)));
+    }
+    [UnityTest]
+    public IEnumerator PointCloudGenTest()
+    {
+        string name = "lm";
+        string split = "test";
+        int scene_id = 1;
+        int im_id = 1;
+
+        BOPDatasetParams dataset_params = new BOPDatasetParams(dataset_path, name, split);
+        var rgb_path = BOPPath.get_rgb_path(dataset_params.split_path, scene_id, im_id, dataset_params.rgb_ext);
+        var depth_path = BOPPath.get_depth_path(dataset_params.split_path, scene_id, im_id, dataset_params.depth_ext);
+
+        var rgbTxeture = TextureIO.LoadTexture(rgb_path);
+        var depthTexture = TextureIO.LoadTexture(depth_path);
+        Assert.IsNotNull(depthTexture);
+        Assert.AreEqual(depthTexture.width, 640);
+        Assert.AreEqual(depthTexture.height, 480);
+        //Assert.AreEqual(depthTexture.format, TextureFormat.R16);
+
+        int resolutionX = depthTexture.width;
+        int resolutionY = depthTexture.height;
+
+        Vector3[] pointcloud_vertices = new Vector3[resolutionX * resolutionY];
+        Color[] pointcloud_colors = rgbTxeture.GetPixels();
+
+        ComputeBuffer pointCloudBuffer = new ComputeBuffer(pointcloud_vertices.Length, 3 * sizeof(float));
+#if UNITY_EDITOR
+        ComputeShader computeShader = AssetDatabase.LoadAssetAtPath<ComputeShader>("Assets/Scripts/DepthImage2PointCloud.compute");
+#endif
+        // load compute shader in project folder.
+
+        var cam_info = dataset_params.load_camera_info();
+
+        int kernel = computeShader.FindKernel("CSMain");
+        computeShader.SetTexture(kernel, "_DepthTexture", depthTexture);
+        computeShader.SetBuffer(kernel, "_PointCloud", pointCloudBuffer);
+        computeShader.SetFloat("_fx", cam_info.fx);
+        computeShader.SetFloat("_fy", cam_info.fx);
+        computeShader.SetFloat("_cx", cam_info.cx);
+        computeShader.SetFloat("_cy", cam_info.cy);
+
+        computeShader.Dispatch(kernel, resolutionX / 8, resolutionY / 8, 1);
+        pointCloudBuffer.GetData(pointcloud_vertices);
+        pointCloudBuffer.Release();
+
+        PointCloudData pointCloud = new PointCloudData(pointcloud_vertices, null, pointcloud_colors, null);
+        Debug.LogFormat("{0}, {1}, {2}", pointCloud.sub_groups.Count, pointCloud.sub_groups[0].vertices.Length, pointCloud.sub_groups[0].colors.Length);
+        pointCloud.ToGameObject();
+
+        for (int i = 0; i < 10000; i++)
+        {
+            yield return null;
+        }
+
+
     }
 }
 
