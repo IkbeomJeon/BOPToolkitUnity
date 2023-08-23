@@ -9,7 +9,7 @@ using static TMPro.SpriteAssetUtilities.TexturePacker_JsonArray;
 
 public static class PointCloudGenerator
 {
-    const int verticesMax = 128 * 128;
+    const int verticesMax = 256 * 256;
 
     enum DataType { __Float, __Double };
 
@@ -28,8 +28,8 @@ public static class PointCloudGenerator
             }
         }
 
-        // Create a new mesh
-        Mesh mesh = new Mesh();
+        //// Create a new mesh
+        //Mesh mesh = new Mesh();
 
         // Parse the .ply file
         int vertexCount = 0;
@@ -82,31 +82,35 @@ public static class PointCloudGenerator
                 }
             }
         }
+        string texturePath = Path.Combine(Path.GetDirectoryName(filePath), textureFileName);
 
-        // Set the mesh data
-        mesh.vertices = vertices.ToArray();
-        mesh.triangles = triangles.ToArray();
-        mesh.colors = colors.ToArray();
-        mesh.uv = uv.ToArray();
-        mesh.RecalculateNormals();
+        PointCloudData pointCloudData = new PointCloudData(vertices.ToArray(), triangles.ToArray(), null, colors.ToArray(), uv.ToArray(), texturePath);
+        return pointCloudData.ToGameObject();
 
-        // Create a new GameObject and add the mesh
-        GameObject obj = new GameObject();
-        obj.AddComponent<MeshFilter>().mesh = mesh;
+        //// Set the mesh data
+        //mesh.vertices = vertices.ToArray();
+        //mesh.triangles = triangles.ToArray();
+        //mesh.colors = colors.ToArray();
+        //mesh.uv = uv.ToArray();
+        //mesh.RecalculateNormals();
 
-        if (textureFileName != "")
-        {
-            Material new_mat = new Material(Shader.Find("Standard"));
-            string texturePath = Path.Combine(Path.GetDirectoryName(filePath), textureFileName);
-            new_mat.mainTexture = LoadTexture(texturePath);
-            obj.AddComponent<MeshRenderer>().sharedMaterial = new_mat;
+        //// Create a new GameObject and add the mesh
+        //GameObject obj = new GameObject();
+        //obj.AddComponent<MeshFilter>().mesh = mesh;
 
-        }
+        //if (textureFileName != "")
+        //{
+        //    Material new_mat = new Material(Shader.Find("Standard"));
+        //    string texturePath = Path.Combine(Path.GetDirectoryName(filePath), textureFileName);
+        //    new_mat.mainTexture = LoadTexture(texturePath);
+        //    obj.AddComponent<MeshRenderer>().sharedMaterial = new_mat;
 
-        else
-            obj.AddComponent<MeshRenderer>().sharedMaterial = new Material(Shader.Find("Custom/VertexColor"));
+        //}
 
-        return obj;
+        //else
+        //    obj.AddComponent<MeshRenderer>().sharedMaterial = new Material(Shader.Find("Custom/VertexColor"));
+
+        //return obj;
     }
 
     public static PointCloudSubData LoadPointCloud(string filePath, int maximumVertex = 6000000, float fScale = 1.0f)
@@ -359,7 +363,7 @@ public static class PointCloudGenerator
         }
     }
 
-    
+
 
     private static GameObject CreateGameObjectWithMesh(Mesh mesh, Material materialToApply, string name = "GeneratedMesh", Transform parent = null)
     {
@@ -394,56 +398,70 @@ public class PointCloudData
 
     Material ptMaterial;
 
-    public PointCloudData(Vector3[] vertices, Vector3[] normals, Color[] colors, Vector2[] uv)
+    public PointCloudData(Vector3[] vertices, int[] triangles, Vector3[] normals, Color[] colors, Vector2[] uv, string texture_filepath)
     {
-
         //Assert.IsTrue(vertices.Length == normals.Length && normals.Length == colors.Length && colors.Length == uvs.Length);
 
-        List<Vector3[]> sub_normals=null;
-        List<Color[]> sub_colors=null;
-        List<Vector2[]> sub_uvs=null;
+        List<Vector3[]> sub_normals = null;
+        List<Color[]> sub_colors = null;
+        List<Vector2[]> sub_uv = null;
+        List<int[]> sub_triangles = null;
 
         var sub_vertices = vertices.SplitIntoChunks(verticesMax).ToList();
 
         if (normals != null)
             sub_normals = normals.SplitIntoChunks(verticesMax).ToList();
 
-        if(colors != null)
+        if (colors != null)
             sub_colors = colors.SplitIntoChunks(verticesMax).ToList();
 
-        if(uv != null)
-            sub_uvs = uv.SplitIntoChunks(verticesMax).ToList();
+        if (uv != null)
+        {
+            sub_uv = uv.SplitIntoChunks(verticesMax).ToList();
+        }
 
-        for(int i =0; i<sub_vertices.Count; i++)
+        if (triangles != null)
+            sub_triangles = triangles.SplitIntoChunks(verticesMax * 6).ToList();
+
+        for (int i = 0; i < sub_vertices.Count; i++)
         {
             PointCloudSubData sub_data = new PointCloudSubData();
             sub_data.vertices = sub_vertices[i];
-            if (sub_normals != null)
+            if (sub_normals != null && normals.Length > 0)
                 sub_data.normals = sub_normals[i];
-            if (colors != null)
+            if (colors != null && colors.Length > 0)
                 sub_data.colors = sub_colors[i];
-            if (uv != null)
-                sub_data.uv = sub_uvs[i];
+            if (uv != null && uv.Length > 0)
+            {
+                sub_data.uv = sub_uv[i];
+                sub_data.texture_filepath = texture_filepath;
+            }
+            if (triangles != null && triangles.Length > 0)
+                sub_data.triangles = sub_triangles[i];
 
             sub_groups.Add(sub_data);
         }
     }
 
-    public GameObject ToGameObject(float point_size=0.01f)
+    public GameObject ToGameObject(float point_size = 0.01f)
     {
-        var root_obj = new GameObject("PointCloud");
-        for(int i=0; i<sub_groups.Count; i++)
+        if (sub_groups.Count > 1)
+        {
+            var root_obj = new GameObject("PointCloud");
+            for (int i = 0; i < sub_groups.Count; i++)
+            {
+                var sub_obj = sub_groups[i].ToGameObject(i.ToString(), point_size);
+                sub_obj.transform.parent = root_obj.transform;
+            }
+            return root_obj;
+        }
+        else
         {
 
-            ptMaterial = new Material(Shader.Find("Unlit/PointCloud"));
-            Texture2D sprite = (Texture2D)Resources.Load("Textures/Circle");
-            //ptMaterial.mainTexture = sprite as Texture;
-            ptMaterial.SetTexture("_MainTex", sprite);
-
-            var sub_obj = sub_groups[i].ToGameObject(i.ToString(), ptMaterial, MeshTopology.Points, point_size);
-            sub_obj.transform.parent = root_obj.transform;
+            var go = sub_groups[0].ToGameObject("PointCloud", point_size);
+            return go;
         }
-        return root_obj;
+
     }
 }
 public class PointCloudSubData
@@ -454,41 +472,72 @@ public class PointCloudSubData
     public Color[] colors;
     public Vector2[] uv;
     public Bounds bounds;
+    public string texture_filepath;
 
-    public GameObject ToGameObject(string name, Material materialToApply, MeshTopology topology, float point_size)
+    public GameObject ToGameObject(string name, float point_size)
     {
         GameObject go = new GameObject(name);
         Mesh mesh = new Mesh();
         mesh.vertices = vertices;
 
-        if(colors != null)
+        Material material;
+
+        if (colors != null)
             mesh.colors = colors;
 
-        if (triangles!=null)
-            mesh.triangles = triangles;
-        else
+        //face의 triangle 정보가 있는 경우
+        if (triangles != null)
         {
+            mesh.triangles = triangles;
+            mesh.RecalculateNormals();
+            material = new Material(Shader.Find("PointCloud/VertexColor"));
+        }
+        //texture 정보가 있는 경우
+        else if (uv != null && uv.Length > 0 && texture_filepath != null)
+        {
+            mesh.uv = uv;
+            material = new Material(Shader.Find("Standard"));
+            material.mainTexture = LoadTexture(texture_filepath);
+        }
+        //triangle, texture없고 point만 존재하는 경우.
+        else if (triangles == null)
+        {
+            material = new Material(Shader.Find("PointCloud/UnlitParticle"));
+            material.SetFloat("_Size", point_size);
+
             var indices = new int[vertices.Length];
             for (int i = 0; i < vertices.Length; ++i)
                 indices[i] = i;
 
-            mesh.SetIndices(indices, topology, 0);
+            mesh.SetIndices(indices, MeshTopology.Points, 0);
         }
+        else
+            throw new Exception("Invalid PointCloud data");
 
-        if(normals != null)
+        if (normals != null && normals.Length > 0)
             mesh.normals = normals;
 
-        if(uv !=null)
-            mesh.uv = uv;
 
         mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 100f);
-
         go.AddComponent<MeshFilter>().mesh = mesh;
-        materialToApply.SetFloat("_Size", point_size);
         var renderer = go.AddComponent<MeshRenderer>();
-        renderer.sharedMaterial = materialToApply;
+        renderer.sharedMaterial = material;
 
         return go;
+    }
+    static private Texture2D LoadTexture(string texturePath)
+    {
+        Texture2D texture = new Texture2D(1, 1);
+        if (File.Exists(texturePath))
+        {
+            byte[] textureData = File.ReadAllBytes(texturePath);
+            texture.LoadImage(textureData);
+        }
+        else
+        {
+            throw new Exception("Texture file not found: " + texturePath);
+        }
+        return texture;
     }
 }
 

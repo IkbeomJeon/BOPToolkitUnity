@@ -355,7 +355,7 @@ public class BOPLoaderTest
         pointCloudBuffer.GetData(pointcloud_vertices);
         pointCloudBuffer.Release();
 
-        PointCloudData pointCloud = new PointCloudData(pointcloud_vertices, null, pointcloud_colors, null);
+        PointCloudData pointCloud = new PointCloudData(pointcloud_vertices, null, null, pointcloud_colors, null, null);
         Debug.LogFormat("{0}, {1}, {2}", pointCloud.sub_groups.Count, pointCloud.sub_groups[0].vertices.Length, pointCloud.sub_groups[0].colors.Length);
         pointCloud.ToGameObject();
 

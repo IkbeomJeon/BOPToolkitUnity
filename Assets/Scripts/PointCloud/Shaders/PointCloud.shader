@@ -1,4 +1,4 @@
-﻿Shader "Unlit/PointCloud"
+﻿Shader "PointCloud/UnlitParticle"
 {
 	Properties
 	{
