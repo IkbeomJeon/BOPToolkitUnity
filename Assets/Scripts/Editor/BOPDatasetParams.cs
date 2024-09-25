@@ -12,7 +12,7 @@ public class BOPDatasetParams
 {
     public string base_path;
     public string split_path;
-    
+
     public string dataset_name;
     public string dataset_split;
     public string dataset_split_type;
@@ -33,18 +33,18 @@ public class BOPDatasetParams
 
     [SerializeField]
     public CameraInfo camera_info = new CameraInfo();
-    [SerializeField] 
+    [SerializeField]
     public SerializableDictionary<int, ModelInfo> model_info = new SerializableDictionary<int, ModelInfo>();
-    [SerializeField] 
+    [SerializeField]
     public SerializableDictionary<int, SceneCamera> scene_camera = new SerializableDictionary<int, SceneCamera>();
-    [SerializeField] 
+    [SerializeField]
     public SerializableDictionary<int, SerializableList<SceneGT>> scene_gt = new SerializableDictionary<int, SerializableList<SceneGT>>();
-    [SerializeField] 
-    public SerializableDictionary<int, SerializableList<SceneGTInfo>> scene_gt_info = new SerializableDictionary<int, SerializableList<SceneGTInfo>>() ;
+    [SerializeField]
+    public SerializableDictionary<int, SerializableList<SceneGTInfo>> scene_gt_info = new SerializableDictionary<int, SerializableList<SceneGTInfo>>();
 
 
 
-    public BOPDatasetParams(string dataset_path, string dataset_name, string dataset_split, string dataset_split_type="")
+    public BOPDatasetParams(string dataset_path, string dataset_name, string dataset_split, string dataset_split_type = "")
     {
         base_path = Path.Combine(dataset_path, dataset_name);
         split_path = Path.Combine(base_path, dataset_split);
@@ -61,18 +61,18 @@ public class BOPDatasetParams
     {
         // scene_path = /BOP/Dataset/lm/test/000000
         loaded_scene_name = Path.GetFileNameWithoutExtension(scene_path);
-        
+
         var dict_info = Directory.GetParent(scene_path);
         //dict_info = /BOP/Dataset/lm/test
 
         var splits = dict_info.Name.Split('_');
 
-        if(splits.Length == 1)
+        if (splits.Length == 1)
         {
             dataset_split = splits[0];
             dataset_split_type = "";
         }
-        else if(splits.Length == 2)
+        else if (splits.Length == 2)
         {
             dataset_split = splits[0];
             dataset_split_type = splits[1];
@@ -86,7 +86,7 @@ public class BOPDatasetParams
 
         if (!Directory.Exists(split_path))
             throw new DirectoryNotFoundException("The path not found: " + split_path);
-        
+
         Init();
     }
     void Init()
@@ -95,13 +95,13 @@ public class BOPDatasetParams
         gray_ext = "png";
         depth_ext = "png";
         camera_filename = "camera.json";
-        
-        if (dataset_name == "lm" )
+
+        if (dataset_name == "lm")
         {
-            if(dataset_split == "train" && dataset_split_type == "pbr")
+            if (dataset_split == "train" && dataset_split_type == "pbr")
                 rgb_ext = "jpg";
         }
-        
+
         if (dataset_name == "ycbv")
         {
             camera_filename = "camera_uw.json";
@@ -121,14 +121,14 @@ public class BOPDatasetParams
             !File.Exists(BOPPath.get_scene_gt_path(split_path, scene_id)) ||
             !File.Exists(BOPPath.get_scene_gt_info_path(split_path, scene_id)))
             return false;
-        
+
         else return true;
     }
     public CameraInfo load_camera_info()
     {
         string filepath = Path.Combine(base_path, camera_filename);
-        
-            filepath = Path.Combine(base_path, camera_filename);
+
+        filepath = Path.Combine(base_path, camera_filename);
 
         string json = File.ReadAllText(filepath);
 
@@ -150,33 +150,33 @@ public class BOPDatasetParams
         var items = scene_dirs.Select(i => Path.GetFileName(i));
         return items.ToList();
     }
-    public SerializableDictionary<int, SceneCamera> load_scene_camera(string scene_name=null)
+    public SerializableDictionary<int, SceneCamera> load_scene_camera(string scene_name = null)
     {
         if (scene_name == null)
             scene_name = loaded_scene_name;
-        
+
         string filepath = Path.Combine(split_path, scene_name, "scene_camera.json");
         string json = File.ReadAllText(filepath);
 
         var dataDict = JsonConvert.DeserializeObject<SerializableDictionary<int, SceneCamera>>(json);
         return dataDict;
     }
-    public SerializableDictionary<int, SerializableList<SceneGT>> load_scene_gt(string scene_name=null)
+    public SerializableDictionary<int, SerializableList<SceneGT>> load_scene_gt(string scene_name = null)
     {
         if (scene_name == null)
             scene_name = loaded_scene_name;
-        
+
         string filepath = Path.Combine(split_path, scene_name, "scene_gt.json");
         string json = File.ReadAllText(filepath);
 
         var dataDict = JsonConvert.DeserializeObject<SerializableDictionary<int, SerializableList<SceneGT>>>(json);
         return dataDict;
     }
-    public SerializableDictionary<int, SerializableList<SceneGTInfo>> load_scene_gt_info(string scene_name=null)
+    public SerializableDictionary<int, SerializableList<SceneGTInfo>> load_scene_gt_info(string scene_name = null)
     {
         if (scene_name == null)
             scene_name = loaded_scene_name;
-        
+
         string filepath = Path.Combine(split_path, scene_name, "scene_gt_info.json");
         string json = File.ReadAllText(filepath);
 
@@ -192,6 +192,7 @@ public static class BOPPath
     {
         return string.Format("{0}/{1:D6}/{2}", split_path, scene_id, "scene_camera.json");
     }
+
     public static string get_scene_gt_path(string split_path, int scene_id)
     {
         return string.Format("{0}/{1:D6}/{2}", split_path, scene_id, "scene_gt.json");

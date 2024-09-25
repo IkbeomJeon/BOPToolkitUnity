@@ -144,7 +144,7 @@ public static class TextureIO
         return mat_out;
     }
 
-    public static Texture2D ConvertMattoTexture2D(Mat sourceMat) 
+    public static Texture2D ConvertMattoTexture2D(Mat sourceMat)
     {
         int imgHeight = sourceMat.Height;
         int imgWidth = sourceMat.Width;
@@ -157,7 +157,7 @@ public static class TextureIO
 
         // Defalut TextureFormat : RGBA32
         TextureFormat textureFormat;
-        
+
         if (sourceMat.Type() == MatType.CV_16U) //ushort
         {
             textureFormat = TextureFormat.RFloat;
@@ -171,30 +171,25 @@ public static class TextureIO
                     output_texture.SetPixel(x, y, new Color(d, 0, 0, 1.0f));
                 }
             }
-            
-            // 아래와 같이 R16으로 변환 시, computeshader에 ushort texture를 넘기지 못하는 문제가 있음.
-            //textureFormat = TextureFormat.R16;
-            //output_texture = new Texture2D(imgWidth, imgHeight, textureFormat, false, false);
-            //Cv2.Flip(sourceMat, sourceMat, FlipMode.X);
-            //output_texture.LoadRawTextureData(sourceMat.Data, (int)(totalBytes));
 
-            ////아래의 코드는 output texture를 확인하기위한 코드
-            //output_texture.Apply();
+  
+        }
+        else if (sourceMat.Type() == MatType.CV_8UC1)
+        {
+            textureFormat = TextureFormat.RFloat;
+            output_texture = new Texture2D(imgWidth, imgHeight, textureFormat, false, false);
+            Cv2.Flip(sourceMat, sourceMat, FlipMode.X);
 
-            //var vis_texture = new Texture2D(imgWidth, imgHeight, TextureFormat.RFloat, false, false);
-            //var data = output_texture.GetRawTextureData<ushort>();
-            //for (var i = 0; i < imgHeight; i++)
-            //{
-            //    for (var j = 0; j < imgWidth; j++)
-            //    {
-            //        var d = data[i * imgWidth + j];
-            //        if (d != 0)
-            //        {
-            //            vis_texture.SetPixel(j, i, TurboColorMap(d / 3000f));
-            //        }
-            //    }
-            //}
-            //WriteTexture(vis_texture, "depth_result.png");
+            for (int y = 0; y < imgHeight; y++)
+            {
+                for (int x = 0; x < imgWidth; x++)
+                {
+                    ushort pixelValue = sourceMat.Get<ushort>(y, x);
+                    float normalizedValue = pixelValue / 65535.0f; // Normalize 16-bit to [0, 1] range
+                    output_texture.SetPixel(x, y, new Color(normalizedValue, 0, 0, 1.0f));
+                }
+            }
+            output_texture.Apply();
         }
         else if (sourceMat.Type() == MatType.CV_32FC1) //float
         {

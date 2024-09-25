@@ -21,6 +21,8 @@ public class MainWindow : EditorWindow
     [SerializeField]
     public BOPFrame bop_frame = new BOPFrame();
 
+    [SerializeField]
+    public string result_filepath;
     private void OnGUI()
     {
         scrollPos = EditorGUILayout.BeginScrollView(scrollPos, false, false);
@@ -43,7 +45,7 @@ public class MainWindow : EditorWindow
                 EditorGUILayout.LabelField("Scene path: " + scene_path, EditorStyles.boldLabel);
                 datasetParams.load_scene();
                 int curr_frame_id = datasetParams.scene_camera.Keys.First();
-                bop_frame.CreateFrame(curr_frame_id, datasetParams);
+                bop_frame.CreateFrame(curr_frame_id, datasetParams, scene_path);
                 Repaint();
             }
             catch (Exception e)
@@ -89,6 +91,30 @@ public class MainWindow : EditorWindow
 
         EditorGUILayout.EndScrollView();
     }
+
+    private void Update()
+    {
+        if (datasetParams == null)
+            return;
+
+        int total_frame = datasetParams.scene_camera.Count;
+
+        if (isPlaying)
+        {
+            if (curr_frame_id < total_frame)
+            {
+                curr_frame_id++;
+                UpdateFrame();
+                Repaint();
+            }
+            else
+            {
+                isPlaying = false;
+            }
+        }
+       
+    }
+
     void FrameSelectionMenu()
     {
         if (datasetParams == null)
@@ -125,7 +151,7 @@ public class MainWindow : EditorWindow
     
     void UpdateFrame()
     {
-        bop_frame.UpdateScene(curr_frame_id, datasetParams);
+        bop_frame.UpdateScene(curr_frame_id, datasetParams, scene_path);
     }
 
     public void LoadPreperence()

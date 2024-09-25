@@ -1,0 +1,34 @@
+// IoUComputeShader.compute
+#pragma kernel CSMain
+
+// Binary Input Textures
+Texture2D<float> _InputTexture1;
+Texture2D<float> _InputTexture2;
+
+// Output buffer to store IoU result
+RWStructuredBuffer<int> _Result;
+
+// Texture dimensions
+uint _TextureWidth;
+uint _TextureHeight;
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    // Check if the thread is within the texture bounds
+    if (id.x >= _TextureWidth || id.y >= _TextureHeight)
+        return;
+
+    // Read the binary values from both textures
+    float value1 = _InputTexture1[id.xy];
+    float value2 = _InputTexture2[id.xy];
+
+    // Calculate Intersection and Union as integers
+    int intersection = (value1 > 0.5 && value2 > 0.5) ? 1 : 0;
+    int unionValue = (value1 > 0.5 || value2 > 0.5) ? 1 : 0;
+
+    // Accumulate the values using InterlockedAdd with integer types
+    InterlockedAdd(_Result[0], intersection);
+    InterlockedAdd(_Result[1], unionValue);
+    
+}

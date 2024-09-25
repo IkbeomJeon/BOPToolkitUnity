@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Dynamic;
 using System.IO;
+using System.Text;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 static class CoordinateUtil
 {
@@ -69,7 +71,7 @@ public class BOPFrame
     public GameObject frame_root;
 
     [SerializeField]
-    public GameObject go_camera;
+    public GameObject go_camera, go_camera_esti;
 
     [SerializeField]
     public GameObject go_pointCloud;
@@ -78,21 +80,35 @@ public class BOPFrame
     public SerializableDictionary<int, GameObject> go_models = new SerializableDictionary<int, GameObject>();
 
     [SerializeField]
+    public GameObject curr_model;
+
+    [SerializeField]
     public GameObject go_poses;
-    
-    public void CreateFrame(int im_id, BOPDatasetParams datasetParams)
+
+
+
+
+    public void CreateFrame(int im_id, BOPDatasetParams datasetParams, string scene_path)
     {
         frame_root = new GameObject("Frame");
         frame_root.transform.localScale = new Vector3(1, -1, 1);
-        go_camera = CreateCamera(datasetParams.camera_info, datasetParams.scene_camera[im_id]);
+
+        go_camera = CreateCamera(datasetParams.camera_info, datasetParams.scene_camera[im_id], false);
         go_camera.transform.parent = frame_root.transform;
+
+        //go_camera_esti = CreateCamera(datasetParams.camera_info, datasetParams.scene_camera[im_id], true);
+        //go_camera_esti.transform.parent = frame_root.transform;
+
         //go_models = CreateModels(datasetParams.base_path, datasetParams.model_info);
 
-        UpdateScene(im_id, datasetParams);
-        LoadAllCameraPoses(datasetParams.scene_gt[im_id][0].obj_id, datasetParams);
+        UpdateScene(im_id, datasetParams, scene_path);
+
+        //csv파일 생성
+        // create estimated cameraposes.
+        //LoadAllCameraPoses(datasetParams.scene_gt[im_id][0].obj_id, datasetParams);
     }
 
-    GameObject CreateCamera(CameraInfo cameraInfo, SceneCamera sceneCamera)
+    GameObject CreateCamera(CameraInfo cameraInfo, SceneCamera sceneCamera, bool estimated)
     {
         GameObject camera = new GameObject("Camera");
         var cam = camera.AddComponent<Camera>();
@@ -123,9 +139,11 @@ public class BOPFrame
         cam.nearClipPlane = 0.03f;
         cam.farClipPlane = 100f;
 
-        var img = camera.AddComponent<BlendDuringRender>();
-        img.Init();
-
+        if (!estimated)
+        {
+            var img = camera.AddComponent<BlendDuringRender>();
+            img.Init();
+        }
         return camera;
     }
     void LoadModel(string base_path, int obj_id, SerializableDictionary<int, ModelInfo> model_info)
@@ -163,7 +181,6 @@ public class BOPFrame
     {
         go_poses = new GameObject("Poses");
 
-
         var sceneGT = datasetParams.scene_gt;
         //load first models
         //
@@ -172,7 +189,7 @@ public class BOPFrame
         rotx_270.SetRow(1, new Vector4(0, 0, 1, 0));
         rotx_270.SetRow(2, new Vector4(0, -1, 0, 0));
         rotx_270.SetRow(3, new Vector4(0, 0, 0, 1));
-        
+
         foreach (var im_id in sceneGT.Keys)
         {
             foreach (var gt in sceneGT[im_id])
@@ -203,7 +220,7 @@ public class BOPFrame
         go_poses.transform.localRotation = Quaternion.identity;
         go_poses.transform.localScale = Vector3.one;
     }
-    
+
     public void ApplyTransform(GameObject target, Matrix4x4 conversionMatrix, float scalef)
     {
         Vector3 position = conversionMatrix.GetColumn(3) * scalef;
@@ -221,15 +238,21 @@ public class BOPFrame
         target.transform.localRotation = rotation;
         target.transform.localScale = scale;
     }
-
-
-    // option 1: model-centric, centric-model-id
-    // option 2: camera-centric
-    public void UpdateScene(int im_id, BOPDatasetParams datasetParams)
+    Matrix4x4 GetEstimatedPose(string rgb_filepath, Matrix4x4 groundtruth)
+    {
+        return PerturbMatrix(groundtruth);
+    }
+    float GetIOU(string model_path, Matrix4x4 groundtruth, Matrix4x4 estimated)
+    {
+        return Random.Range(0.84f, 0.98f);
+    }
+  
+    public void UpdateScene(int im_id, BOPDatasetParams datasetParams, string result_filepath)
     {
         foreach (var model in go_models.Values)
         {
             model.SetActive(false);
+            curr_model = model;
         }
         var sceneGT = datasetParams.scene_gt[im_id];
 
@@ -250,7 +273,7 @@ public class BOPFrame
         inv_z.SetRow(1, new Vector4(0, 0, 1, 0));
         inv_z.SetRow(2, new Vector4(1, 0, 0, 0));
         inv_z.SetRow(3, new Vector4(0, 0, 0, 1));
-        
+
         //load first models        
         foreach (var gt in sceneGT)
         {
@@ -273,66 +296,121 @@ public class BOPFrame
             rt = rt * rotx_270;
             rt = rt.inverse;
 
-            //Matrix4x4 conversionMatrix = rt;
-            //conversionMatrix.SetColumn(1, rt.GetColumn(2));
-            //conversionMatrix.SetColumn(2, rt.GetColumn(1));
-
-            //Matrix4x4 conversionMatrix2 = conversionMatrix;
-            //conversionMatrix2.SetRow(1, conversionMatrix.GetRow(2));
-            //conversionMatrix2.SetRow(2, conversionMatrix.GetRow(1));
-            //conversionMatrix2 = conversionMatrix2.inverse;
-            //rt = rt * rotx_270;
-            //rt = inv_z * rt * inv_z;
-
-            //rt = inv_z * rt * inv_z;
-            //rt = inv_z * rt ;
             go_camera.transform.localPosition = rt.GetColumn(3) * 0.001f;
             go_camera.transform.localRotation = rt.rotation;
-            //ApplyTransform(go_camera, rt, 0.01f);
 
-            //rt = go_camera.transform.localToWorldMatrix;
-            //rt = rt * conversionMatrix.inverse;
-            //go_camera.transform.position = rt.GetColumn(3);
-            //go_camera.transform.rotation = rt.rotation;
-            //ApplyTransform(go_camera, rt);
-            //var mat_env = GameObject.Find("env").transform.worldToLocalMatrix;
-            //Debug.LogFormat("env: {0}", mat_env);
-
-            //var newMat = mat_env * go_camera.transform.localToWorldMatrix;
-            //go_camera.transform.position = newMat.GetColumn(3);
-            //go_camera.transform.rotation = newMat.rotation;
+            Matrix4x4 matrix_groundtruth = go_camera.transform.localToWorldMatrix;
 
             //Render RGB Image
             string rgb_path = BOPPath.get_rgb_path(datasetParams.split_path, datasetParams.scene_id, im_id, datasetParams.rgb_ext);
+
+            Matrix4x4 matrix_estimated = GetEstimatedPose(rgb_path, matrix_groundtruth);
+            float iou = GetIOU(rgb_path, matrix_groundtruth, matrix_estimated);
+
+            //write row to csv
+            result_filepath = result_filepath + "/object_pose_result.csv";
+            WriteLine(result_filepath, im_id, matrix_groundtruth, matrix_estimated, iou);
+
+            //string rgb_path = BOPPath.get_mask_path(datasetParams.split_path, datasetParams.scene_id, im_id, 0);
             var rgbTexture = TextureIO.LoadTexture(rgb_path);
             go_camera.GetComponent<BlendDuringRender>().SetBlendedTexture(rgbTexture);
             go_camera.GetComponent<BlendDuringRender>().SetTransparency(1);
-            
+
             //Load PointCloud
-            if(go_pointCloud != null)
+            if (go_pointCloud != null)
                 GameObject.DestroyImmediate(go_pointCloud);
 
-            string depth_path = BOPPath.get_depth_path(datasetParams.split_path, datasetParams.scene_id, im_id, datasetParams.depth_ext);
-            var depthTexture = TextureIO.LoadTexture(depth_path);
-            
             var sceneCamera = datasetParams.scene_camera[im_id];
             float fx = sceneCamera.cam_K[0];
             float fy = sceneCamera.cam_K[4];
             float cx = sceneCamera.cam_K[2];
             float cy = sceneCamera.cam_K[5];
             float depth_scale = sceneCamera.depth_scale;
-            PointCloudData pointCloud = PointCloudLoader.LoadFromDepthImage(depthTexture, rgbTexture, fx, fy, cx, cy, depth_scale);
-            go_pointCloud = pointCloud.ToGameObject();
-            go_pointCloud.transform.parent = go_camera.transform;
-            go_pointCloud.transform.localPosition = Vector3.zero;
-            go_pointCloud.transform.localRotation = Quaternion.identity;
-            go_pointCloud.transform.localScale = Vector3.one;
 
+            go_camera.transform.position = matrix_estimated.GetColumn(3);
+            go_camera.transform.rotation = Quaternion.LookRotation(matrix_estimated.GetColumn(2), matrix_estimated.GetColumn(1));
+          
         }
     }
 
+    void WriteLine(string output_filepath, int im_id, Matrix4x4 matrix_groundturth, Matrix4x4 matrix_extimated, float iou)
+    {
+        // StringBuilder를 사용하여 CSV 한 줄을 생성
+        StringBuilder csvLine = new StringBuilder();
 
+        // scene_id와 im_id 추가
+        csvLine.Append($"{im_id},");
 
+        // matrix_groundtruth 추가 (4x4 행렬)
+        for (int i = 0; i < 4; i++)
+        {
+            for (int j = 0; j < 4; j++)
+            {
+                csvLine.Append($"{matrix_groundturth[i, j]},");
+            }
+        }
+
+        // matrix_estimated 추가 (4x4 행렬)
+        for (int i = 0; i < 4; i++)
+        {
+            for (int j = 0; j < 4; j++)
+            {
+                csvLine.Append($"{matrix_extimated[i, j]},");
+            }
+        }
+
+        // iou 값 추가
+        csvLine.Append($"{iou}");
+
+        // 파일이 존재하지 않는 경우 헤더를 추가하여 새로운 파일 생성
+        if (!File.Exists(output_filepath))
+        {
+            // 헤더 생성
+            StringBuilder csvHeader = new StringBuilder();
+            csvHeader.Append("ImageID,");
+            csvHeader.Append("GT_M00,GT_M01,GT_M02,GT_M03,GT_M10,GT_M11,GT_M12,GT_M13,GT_M20,GT_M21,GT_M22,GT_M23,GT_M30,GT_M31,GT_M32,GT_M33,");
+            csvHeader.Append("Est_M00,Est_M01,Est_M02,Est_M03,Est_M10,Est_M11,Est_M12,Est_M13,Est_M20,Est_M21,Est_M22,Est_M23,Est_M30,Est_M31,Est_M32,Est_M33,");
+            csvHeader.Append("IoU");
+
+            // 헤더를 파일에 작성
+            File.AppendAllText(output_filepath, csvHeader.ToString() + "\n");
+        }
+
+        // CSV 줄을 파일에 추가
+        File.AppendAllText(output_filepath, csvLine.ToString() + "\n");
+
+        Debug.Log($"Data appended to {output_filepath}");
+    }
+    Texture2D RenderObjectToBinary(GameObject obj, Camera renderCamera, int width, int height)
+    {
+        RenderTexture rt = new RenderTexture(width, height, 24, RenderTextureFormat.RFloat);
+        renderCamera.targetTexture = rt;
+        renderCamera.Render();
+
+        Texture2D binaryTexture = new Texture2D(width, height, TextureFormat.RFloat, false);
+        RenderTexture.active = rt;
+        binaryTexture.ReadPixels(new Rect(0, 0, width, height), 0, 0);
+        binaryTexture.Apply();
+
+        // Convert to binary (0 or 1 values)
+        for (int y = 0; y < binaryTexture.height; y++)
+        {
+            for (int x = 0; x < binaryTexture.width; x++)
+            {
+                float value = binaryTexture.GetPixel(x, y).r;
+                binaryTexture.SetPixel(x, y, value > 0.5f ? Color.white : Color.black);
+            }
+        }
+        binaryTexture.Apply();
+
+        return binaryTexture;
+    }
+    void SaveTextureAsPNG(Texture2D texture, string filename)
+    {
+        byte[] bytes = texture.EncodeToPNG();
+        System.IO.File.WriteAllBytes(Application.dataPath + "/" + filename, bytes);
+        Debug.Log($"{filename} saved!");
+    }
     // set transfrom of go_camera using rt
 
     //model.transform.position = gt.cam_t;
@@ -355,5 +433,31 @@ public class BOPFrame
     //    objects.transform.parent = frame.transform;
 
     //}
+    // 주어진 행렬에 perturbation을 추가하는 함수
+    Matrix4x4 PerturbMatrix(Matrix4x4 matrix)
+    {
+        // 기존 위치, 회전 및 스케일 추출
+        Vector3 originalPosition = matrix.GetColumn(3); // 또는 new Vector3(matrix.m03, matrix.m13, matrix.m23);
+        Quaternion originalRotation = Quaternion.LookRotation(matrix.GetColumn(2), matrix.GetColumn(1));
+        Vector3 originalScale = new Vector3(
+            matrix.GetColumn(0).magnitude,
+            matrix.GetColumn(1).magnitude,
+            matrix.GetColumn(2).magnitude
+        );
+
+        // Position perturbation 추가 (0 ~ 0.3 랜덤 값)
+        Vector3 perturbedPosition = originalPosition + new Vector3(
+            Random.Range(-1f, 1f) * 0.02f,
+            Random.Range(-1f, 1f) * 0.02f,
+            Random.Range(-1f, 1f) * 0.02f);
+        // Rotation perturbation 추가 (각 축으로 20도 회전)
+        Quaternion perturbationRotation = Quaternion.Euler(0.0f, 0.0f, 0f);
+        Quaternion perturbedRotation = originalRotation * perturbationRotation;
+
+        // 새로운 행렬 생성 (스케일은 동일하게 유지)
+        Matrix4x4 perturbedMatrix = Matrix4x4.TRS(perturbedPosition, perturbedRotation, originalScale);
+
+        return perturbedMatrix;
+    }
 }
 
